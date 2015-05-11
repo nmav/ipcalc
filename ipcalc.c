@@ -361,6 +361,9 @@ int get_ipv4_info(const char *ipStr, unsigned prefix, ip_info_st * info,
 		}
 
 		info->hostmax = strdup(namebuf);
+	} else {
+		info->hostmin = info->network;
+		info->hostmax = info->network;
 	}
 
 	if (showHostname) {
@@ -462,6 +465,9 @@ int get_ipv6_info(const char *ipStr, unsigned prefix, ip_info_st * info,
 		}
 
 		info->hostmax = strdup(errBuf);
+	} else {
+		info->hostmin = info->network;
+		info->hostmax = info->network;
 	}
 
 	if (showHostname) {
@@ -492,6 +498,7 @@ int main(int argc, const char **argv)
 {
 	int showBroadcast = 0, showPrefix = 0, showNetwork = 0;
 	int showHostname = 0, showNetmask = 0;
+	int showHostMax = 0, showHostMin = 0;
 	int beSilent = 0;
 	int doCheck = 0, familyIPv6 = 0, doInfo = 0;
 	int rc;
@@ -520,6 +527,10 @@ int main(int argc, const char **argv)
 		 "Display network address",},
 		{"prefix", 'p', 0, &showPrefix, 0,
 		 "Display network prefix",},
+		{"minaddr", '\0', 0, &showHostMin, 0,
+		 "Display the minimum address in the network",},
+		{"maxaddr", '\0', 0, &showHostMax, 0,
+		 "Display the maximum address in the network",},
 		{"silent", 's', 0, &beSilent, 0,
 		 "Don't ever display error messages"},
 		POPT_AUTOHELP {NULL, '\0', 0, 0, 0, NULL, NULL}
@@ -639,7 +650,7 @@ int main(int argc, const char **argv)
 		return 0;
 
 	if (!(showNetmask | showPrefix | showBroadcast | showNetwork |
-	      showHostname | doInfo)) {
+	      showHostMin | showHostMax | showHostname | doInfo)) {
 		poptPrintHelp(optCon, stderr, 0);
 		return 1;
 	}
@@ -691,6 +702,14 @@ int main(int argc, const char **argv)
 
 		if (showNetwork) {
 			printf("NETWORK=%s\n", info.network);
+		}
+
+		if (showHostMin && info.hostmin) {
+			printf("MINADDR=%s\n", info.hostmin);
+		}
+
+		if (showHostMax && info.hostmax) {
+			printf("MAXADDR=%s\n", info.hostmax);
 		}
 
 		if (showHostname) {
