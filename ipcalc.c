@@ -616,7 +616,7 @@ int main(int argc, const char **argv)
 			       (1 << (32 - info.prefix)) - 2);
 		else {
 			if (info.prefix < sizeof(long) * 8 + 1)
-				printf("Hosts/Net:\ttoo many\n");
+				printf("Hosts/Net:\t2^(%u)\n", (128 - info.prefix));
 			else
 				printf("Hosts/Net:\t%lu\n",
 				       (unsigned long)1 << (128 - info.prefix));
