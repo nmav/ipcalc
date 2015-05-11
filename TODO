@@ -1,0 +1,2 @@
+* Print information about the IP range assignment in --info
+* Print hostmin and hostmax in --info
