@@ -257,6 +257,7 @@ typedef struct ip_info_st {
 
 	char *hostmin;
 	char *hostmax;
+	const char *type; 
 } ip_info_st;
 
 int get_ipv4_info(const char *ipStr, unsigned prefix, ip_info_st * info,
@@ -408,6 +409,27 @@ char *ipv6_prefix_to_mask(unsigned prefix, struct in6_addr *mask)
 	return strdup(buf);
 }
 
+char *ipv6_net_to_type(struct in6_addr *net)
+{
+	if (!(net->s6_addr[0] & 0xc0) && (net->s6_addr[0] & 0x20)) {
+		return "Global Unicast (RFC4291)";
+	}
+
+	if (!(net->s6_addr[0] & 0x2) && ((net->s6_addr[0] & 0xfc) == 0xfc)) {
+		return "Unique Local Unicast (RFC4193)";
+	}
+
+	if (((net->s6_addr[0] & 0xfe) == 0xfe) && (net->s6_addr[1] & 0x80) && !(net->s6_addr[1] & 0x3f)) {
+		return "Link-Scoped Unicast (RFC4291)";
+	}
+
+	if ((net->s6_addr[0] & 0xff) == 0xff) {
+		return "Multicast (RFC4291)";
+	}
+
+	return "Reserved";
+}
+
 int get_ipv6_info(const char *ipStr, unsigned prefix, ip_info_st * info,
 		  int beSilent, int showHostname)
 {
@@ -451,6 +473,8 @@ int get_ipv6_info(const char *ipStr, unsigned prefix, ip_info_st * info,
 	}
 
 	info->network = strdup(errBuf);
+
+	info->type = ipv6_net_to_type(&network);
 
 	if (prefix < 128) {
 		info->hostmin = strdup(errBuf);
@@ -662,6 +686,8 @@ int main(int argc, const char **argv)
 		printf("Address:\t%s\n", ipStr);
 		printf("Netmask:\t%s = %u\n", info.netmask, info.prefix);
 		printf("Network:\t%s/%u\n", info.network, info.prefix);
+		if (info.type)
+			printf("Address space:\t%s\n", info.type);
 
 		if (info.broadcast)
 			printf("Broadcast:\t%s\n", info.broadcast);
