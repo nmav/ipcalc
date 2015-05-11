@@ -1,0 +1,3 @@
+NETMASK=ffff:ffff:ffff:ffff::
+PREFIX=64
+NETWORK=fd95:6be5:ae0:84a5::
