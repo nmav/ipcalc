@@ -236,7 +236,7 @@ int main(int argc, const char **argv) {
     int showBroadcast = 0, showPrefix = 0, showNetwork = 0;
     int showHostname = 0, showNetmask = 0;
     int beSilent = 0;
-    int doCheck = 0, familyIPv4 = 0, familyIPv6 = 0;
+    int doCheck = 0, familyIPv6 = 0;
     int rc;
     poptContext optCon;
     char *ipStr, *prefixStr, *netmaskStr, *chptr;
@@ -249,10 +249,10 @@ int main(int argc, const char **argv) {
     struct poptOption optionsTable[] = {
         { "check", 'c', 0, &doCheck, 0,
           "Validate IP address for specified address family", },
-        { "ipv4", '4', 0, &familyIPv4, 0,
-          "IPv4 address family (default)", },
-        { "ipv6", '6', 0, &familyIPv6, 0,
-          "IPv6 address family", },
+        { "ipv4", '4', 0, NULL, 0,
+          "IPv4 address family (deprecated)", },
+        { "ipv6", '6', 0, NULL, 0,
+          "IPv6 address family (deprecated)", },
         { "broadcast", 'b', 0, &showBroadcast, 0,
           "Display calculated broadcast address", },
         { "hostname", 'h', 0, &showHostname, 0,
@@ -345,18 +345,8 @@ int main(int argc, const char **argv) {
         return 1;
     }
 
-    if (!familyIPv4 && !familyIPv6)
-        familyIPv4 = 1;
-
-    if (familyIPv4 && familyIPv6) {
-        if (!beSilent) {
-            fprintf(stderr, "ipcalc: cannot specify both address families\n");
-        }
-        return 1;
-    }
-
     /* Handle CIDR entries such as 172/8 */
-    if (prefix >= 0 && familyIPv4) {
+    if (prefix >= 0 && !familyIPv6) {
         char *tmp = ipStr;
         int i;
 
@@ -378,7 +368,7 @@ int main(int argc, const char **argv) {
         }
     }
 
-    if (familyIPv4) {
+    if (!familyIPv6) {
         if (inet_pton(AF_INET, ipStr, &ip) <= 0) {
             if (!beSilent)
                 fprintf(stderr, "ipcalc: bad IPv4 address: %s\n", ipStr);
@@ -416,7 +406,7 @@ int main(int argc, const char **argv) {
         return 1;
     }
 
-    if (familyIPv4 &&
+    if (!familyIPv6 &&
         !(showNetmask|showPrefix|showBroadcast|showNetwork|showHostname)) {
         poptPrintHelp(optCon, stderr, 0);
         return 1;
@@ -475,9 +465,9 @@ int main(int argc, const char **argv) {
     }
 
     if (showHostname) {
-        if (familyIPv4) {
+        if (!familyIPv6) {
             hostName = get_hostname(AF_INET, &ip);
-        } else if (familyIPv6) {
+        } else {
             hostName = get_hostname(AF_INET6, &ip6);
         }
 
