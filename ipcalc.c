@@ -249,18 +249,20 @@ int ipv4_mask_to_int(const char *prefix)
 }
 
 typedef struct ip_info_st {
-	char *network_expanded;
 	char *network;
 	char *broadcast;	/* ipv4 only */
 	char *netmask;
 	char *hostname;
 	unsigned prefix;
+
+	char *hostmin;
+	char *hostmax;
 } ip_info_st;
 
 int get_ipv4_info(const char *ipStr, unsigned prefix, ip_info_st * info,
 		  int beSilent, int showHostname)
 {
-	struct in_addr ip, netmask, network, broadcast;
+	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
 	char namebuf[INET6_ADDRSTRLEN + 1];
 	char errBuf[250];
 
@@ -333,6 +335,33 @@ int get_ipv4_info(const char *ipStr, unsigned prefix, ip_info_st * info,
 	}
 
 	info->network = strdup(namebuf);
+
+	if (prefix < 32) {
+		memcpy(&minhost, &network, sizeof(minhost));
+
+		if (prefix <= 30)
+			minhost.s_addr = htonl(ntohl(minhost.s_addr)|1);
+		if (inet_ntop(AF_INET, &minhost, namebuf, INET_ADDRSTRLEN) == NULL) {
+			fprintf(stderr, "Memory allocation failure line %d\n",
+				__LINE__);
+			abort();
+		}
+		info->hostmin = strdup(namebuf);
+
+		memcpy(&maxhost, &network, sizeof(minhost));
+		maxhost.s_addr |= ~netmask.s_addr;
+		if (prefix <= 30) {
+			maxhost.s_addr = htonl(ntohl(maxhost.s_addr)-1);
+		}
+		if (inet_ntop(AF_INET, &maxhost, namebuf, sizeof(namebuf)) == 0) {
+			if (!beSilent)
+				fprintf(stderr,
+					"ipcalc: error calculating the IPv6 network\n");
+			return -1;
+		}
+
+		info->hostmax = strdup(namebuf);
+	}
 
 	if (showHostname) {
 		info->hostname = get_hostname(AF_INET, &ip);
@@ -419,6 +448,21 @@ int get_ipv6_info(const char *ipStr, unsigned prefix, ip_info_st * info,
 	}
 
 	info->network = strdup(errBuf);
+
+	if (prefix < 128) {
+		info->hostmin = strdup(errBuf);
+
+		for (i = 0; i < sizeof(struct in6_addr); i++)
+			network.s6_addr[i] |= ~mask.s6_addr[i];
+		if (inet_ntop(AF_INET6, &network, errBuf, sizeof(errBuf)) == 0) {
+			if (!beSilent)
+				fprintf(stderr,
+					"ipcalc: error calculating the IPv6 network\n");
+			return -1;
+		}
+
+		info->hostmax = strdup(errBuf);
+	}
 
 	if (showHostname) {
 		info->hostname = get_hostname(AF_INET6, &ip6);
@@ -606,15 +650,25 @@ int main(int argc, const char **argv)
 	if (doInfo) {
 		printf("Address:\t%s\n", ipStr);
 		printf("Netmask:\t%s = %u\n", info.netmask, info.prefix);
-		printf("Network:\t%s\n", info.network);
+		printf("Network:\t%s/%u\n", info.network, info.prefix);
 
 		if (info.broadcast)
 			printf("Broadcast:\t%s\n", info.broadcast);
+		printf("\n");
 
-		if (!familyIPv6)
-			printf("Hosts/Net:\t%d\n",
-			       (1 << (32 - info.prefix)) - 2);
-		else {
+		if (info.hostmin)
+			printf("HostMin:\t%s\n", info.hostmin);
+		if (info.hostmax)
+			printf("HostMax:\t%s\n", info.hostmax);
+
+		if (!familyIPv6) {
+			unsigned hosts;
+			if (info.prefix >= 31)
+				hosts = (1 << (32 - info.prefix));
+			else
+				hosts = (1 << (32 - info.prefix)) - 2;
+			printf("Hosts/Net:\t%u\n", hosts);
+		} else {
 			if (info.prefix < sizeof(long) * 8 + 1)
 				printf("Hosts/Net:\t2^(%u)\n", (128 - info.prefix));
 			else
