@@ -223,6 +223,40 @@ char *get_hostname(int family, void *addr)
     return hostinfo->h_name;
 }
 
+int bit_count (uint32_t i)
+{
+	int c = 0;
+	unsigned int seen_one = 0;
+
+	while (i > 0) {
+		if (i & 1) {
+			seen_one = 1;
+			c++;
+		} else {
+			if (seen_one) {
+				return -1;
+			}
+		}
+		i >>= 1;
+	}
+
+	if (c == 0)
+		return -1;
+	return c;
+}
+
+int ipv4_mask_to_int(const char *prefix)
+{
+	int ret;
+	struct in_addr in;
+
+	ret = inet_pton(AF_INET, prefix, &in);
+	if (ret == 0)
+		return -1;
+
+	return bit_count(ntohl(in.s_addr));
+}
+
 /*!
   \fn main(int argc, const char **argv)
   \brief wrapper program for ipcalc functions.
@@ -306,8 +340,19 @@ int main(int argc, const char **argv) {
 
     if (prefixStr != NULL) {
     	int r = 0;
-        r = safe_atoi(prefixStr, &prefix);
-        if (r != 0 || prefix < 0 || ((familyIPv6 && prefix > 128) || (!familyIPv6 && prefix > 32))) {
+
+    	if (!familyIPv6 && strchr(prefixStr, '.')) { /* prefix is 255.x.x.x */
+    		prefix = ipv4_mask_to_int(prefixStr);
+    	} else {
+	        r = safe_atoi(prefixStr, &prefix);
+	        if (r != 0) {
+		        if (!beSilent)
+        		        fprintf(stderr, "ipcalc: bad prefix: %s\n", prefixStr);
+			return 1;
+		}
+	}
+
+        if (prefix < 0 || ((familyIPv6 && prefix > 128) || (!familyIPv6 && prefix > 32))) {
             if (!beSilent)
                 fprintf(stderr, "ipcalc: bad prefix: %s\n", prefixStr);
             return 1;
