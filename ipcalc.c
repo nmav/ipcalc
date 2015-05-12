@@ -260,7 +260,7 @@ typedef struct ip_info_st {
 	const char *type; 
 } ip_info_st;
 
-int get_ipv4_info(const char *ipStr, unsigned prefix, ip_info_st * info,
+int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		  int beSilent, int showHostname)
 {
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
@@ -292,6 +292,8 @@ int get_ipv4_info(const char *ipStr, unsigned prefix, ip_info_st * info,
 			}
 			ipStr = tmp;
 		}
+	} else { /* assume single host */
+		prefix = 32;
 	}
 
 	if (inet_pton(AF_INET, ipStr, &ip) <= 0) {
@@ -430,7 +432,7 @@ char *ipv6_net_to_type(struct in6_addr *net)
 	return "Reserved";
 }
 
-int get_ipv6_info(const char *ipStr, unsigned prefix, ip_info_st * info,
+int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 		  int beSilent, int showHostname)
 {
 	struct in6_addr ip6, mask, network;
@@ -444,11 +446,15 @@ int get_ipv6_info(const char *ipStr, unsigned prefix, ip_info_st * info,
 			fprintf(stderr, "ipcalc: bad IPv6 address: %s\n",
 				ipStr);
 		return -1;
-	} else if (prefix > 128) {
+	} 
+	
+	if (prefix > 128) {
 		if (!beSilent)
 			fprintf(stderr, "ipcalc: bad IPv6 prefix: %d\n",
 				prefix);
 		return -1;
+	} else if (prefix < 0) {
+		prefix = 128;
 	}
 
 	info->prefix = prefix;
