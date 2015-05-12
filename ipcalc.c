@@ -249,6 +249,9 @@ int ipv4_mask_to_int(const char *prefix)
 }
 
 typedef struct ip_info_st {
+	char *expanded_ip;
+	char *expanded_network;
+
 	char *network;
 	char *broadcast;	/* ipv4 only */
 	char *netmask;
@@ -257,7 +260,7 @@ typedef struct ip_info_st {
 
 	char *hostmin;
 	char *hostmax;
-	const char *type; 
+	const char *type;
 } ip_info_st;
 
 char *ipv4_net_to_type(struct in_addr net)
@@ -373,7 +376,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 			}
 			ipStr = tmp;
 		}
-	} else { /* assume single host */
+	} else {		/* assume single host */
 		prefix = 32;
 	}
 
@@ -426,8 +429,9 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		memcpy(&minhost, &network, sizeof(minhost));
 
 		if (prefix <= 30)
-			minhost.s_addr = htonl(ntohl(minhost.s_addr)|1);
-		if (inet_ntop(AF_INET, &minhost, namebuf, INET_ADDRSTRLEN) == NULL) {
+			minhost.s_addr = htonl(ntohl(minhost.s_addr) | 1);
+		if (inet_ntop(AF_INET, &minhost, namebuf, INET_ADDRSTRLEN) ==
+		    NULL) {
 			fprintf(stderr, "Memory allocation failure line %d\n",
 				__LINE__);
 			abort();
@@ -437,7 +441,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		memcpy(&maxhost, &network, sizeof(minhost));
 		maxhost.s_addr |= ~netmask.s_addr;
 		if (prefix <= 30) {
-			maxhost.s_addr = htonl(ntohl(maxhost.s_addr)-1);
+			maxhost.s_addr = htonl(ntohl(maxhost.s_addr) - 1);
 		}
 		if (inet_ntop(AF_INET, &maxhost, namebuf, sizeof(namebuf)) == 0) {
 			if (!beSilent)
@@ -502,19 +506,31 @@ char *ipv6_net_to_type(struct in6_addr *net)
 	/* based on IANA's iana-ipv6-special-registry and ipv6-address-space 
 	 * Updated: 2015-05-12
 	 */
-	if (memcmp(net->s6_addr, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01", 16) == 0)
+	if (memcmp
+	    (net->s6_addr,
+	     "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01",
+	     16) == 0)
 		return "Loopback Address";
 
-	if (memcmp(net->s6_addr, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 16) == 0)
+	if (memcmp
+	    (net->s6_addr,
+	     "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+	     16) == 0)
 		return "Unspecified Address";
 
-	if (memcmp(net->s6_addr, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff", 12) == 0)
+	if (memcmp
+	    (net->s6_addr, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff",
+	     12) == 0)
 		return "IPv4-mapped Address";
 
-	if (memcmp(net->s6_addr, "\x00\x64\xff\x9b\x00\x00\x00\x00\x00\x00\x00\x00", 12) == 0)
+	if (memcmp
+	    (net->s6_addr, "\x00\x64\xff\x9b\x00\x00\x00\x00\x00\x00\x00\x00",
+	     12) == 0)
 		return "IPv4-IPv6 Translat.";
 
-	if (memcmp(net->s6_addr, "\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 12) == 0)
+	if (memcmp
+	    (net->s6_addr, "\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+	     12) == 0)
 		return "Discard-Only Address Block";
 
 	if ((word1 & 0xfffe) == 0x2001 && word2 == 0)
@@ -542,6 +558,27 @@ char *ipv6_net_to_type(struct in6_addr *net)
 	return "Reserved";
 }
 
+static
+char *expand_ipv6(struct in6_addr *ip6)
+{
+	char buf[128];
+	char *p;
+	unsigned i;
+
+	p = buf;
+	for (i = 0; i < 16; i++) {
+		sprintf(p, "%.2x", (unsigned)ip6->s6_addr[i]);
+		p += 2;
+		if (i % 2 != 0 && i != 15) {
+			*p = ':';
+			p++;
+		}
+	}
+	*p = 0;
+
+	return strdup(buf);
+}
+
 int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 		  int beSilent, int showHostname)
 {
@@ -556,9 +593,12 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 			fprintf(stderr, "ipcalc: bad IPv6 address: %s\n",
 				ipStr);
 		return -1;
-	} 
-	
-	if (prefix > 128) {
+	}
+
+	/* expand  */
+	info->expanded_ip = expand_ipv6(&ip6);
+
+	if (prefix == 0 || prefix > 128) {
 		if (!beSilent)
 			fprintf(stderr, "ipcalc: bad IPv6 prefix: %d\n",
 				prefix);
@@ -590,6 +630,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	info->network = strdup(errBuf);
 
+	info->expanded_network = expand_ipv6(&network);
 	info->type = ipv6_net_to_type(&network);
 
 	if (prefix < 128) {
@@ -793,7 +834,8 @@ int main(int argc, const char **argv)
 
 	/* if no option is given, print information on IP */
 	if (!(showNetmask | showPrefix | showBroadcast | showNetwork |
-	      showHostMin | showHostMax | showHostname | doInfo | showAddrSpace)) {
+	      showHostMin | showHostMax | showHostname | doInfo |
+	      showAddrSpace)) {
 		doInfo = 1;
 	}
 
@@ -801,37 +843,51 @@ int main(int argc, const char **argv)
 
 	/* we know what we want to display now, so display it. */
 	if (doInfo) {
+		if (info.expanded_ip)
+			printf("Full Address:\t%s\n", info.expanded_ip);
 		printf("Address:\t%s\n", ipStr);
-		printf("Netmask:\t%s = %u\n", info.netmask, info.prefix);
-		printf("Network:\t%s/%u\n", info.network, info.prefix);
-		if (info.type)
-			printf("Address space:\t%s\n", info.type);
 
-		if (info.broadcast)
-			printf("Broadcast:\t%s\n", info.broadcast);
-		printf("\n");
-
-		if ((familyIPv6 && info.prefix != 128) || 
+		if ((familyIPv6 && info.prefix != 128) ||
 		    (!familyIPv6 && info.prefix != 32)) {
+			printf("Netmask:\t%s = %u\n", info.netmask,
+			       info.prefix);
+			if (info.expanded_network)
+				printf("Full Network:\t%s\n",
+				       info.expanded_network);
+			printf("Network:\t%s/%u\n", info.network, info.prefix);
+			if (info.type)
+				printf("Address space:\t%s\n", info.type);
+
+			if (info.broadcast)
+				printf("Broadcast:\t%s\n", info.broadcast);
+			printf("\n");
+
 			if (info.hostmin)
 				printf("HostMin:\t%s\n", info.hostmin);
 			if (info.hostmax)
 				printf("HostMax:\t%s\n", info.hostmax);
-		}
 
-		if (!familyIPv6) {
-			unsigned hosts;
-			if (info.prefix >= 31)
-				hosts = (1 << (32 - info.prefix));
-			else
-				hosts = (1 << (32 - info.prefix)) - 2;
-			printf("Hosts/Net:\t%u\n", hosts);
+			if (!familyIPv6) {
+				unsigned hosts;
+				if (info.prefix >= 31)
+					hosts = (1 << (32 - info.prefix));
+				else
+					hosts = (1 << (32 - info.prefix)) - 2;
+				printf("Hosts/Net:\t%u\n", hosts);
+			} else {
+				if (info.prefix < sizeof(long) * 8 + 1)
+					printf("Hosts/Net:\t2^(%u)\n",
+					       (128 - info.prefix));
+				else
+					printf("Hosts/Net:\t%lu\n",
+					       (unsigned long)1 << (128 -
+								    info.
+								    prefix));
+			}
 		} else {
-			if (info.prefix < sizeof(long) * 8 + 1)
-				printf("Hosts/Net:\t2^(%u)\n", (128 - info.prefix));
-			else
-				printf("Hosts/Net:\t%lu\n",
-				       (unsigned long)1 << (128 - info.prefix));
+			if (info.type)
+				printf("Address space:\t%s\n", info.type);
+
 		}
 	} else {
 
