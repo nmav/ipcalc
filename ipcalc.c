@@ -781,15 +781,7 @@ int main(int argc, const char **argv)
 		r = get_ipv6_info(ipStr, prefix, &info, beSilent, showHostname);
 	} else {
 		if (showBroadcast || showNetwork || showPrefix) {
-			if (!(netmaskStr = (char *)poptGetArg(optCon))
-			    && (prefix < 0)) {
-				if (!beSilent) {
-					fprintf(stderr,
-						"ipcalc: netmask or prefix expected\n");
-					poptPrintHelp(optCon, stderr, 0);
-				}
-				return 1;
-			} else if (netmaskStr && prefix >= 0) {
+			if (netmaskStr && prefix >= 0) {
 				if (!beSilent) {
 					fprintf(stderr,
 						"ipcalc: both netmask and prefix specified\n");
