@@ -260,6 +260,84 @@ typedef struct ip_info_st {
 	const char *type; 
 } ip_info_st;
 
+char *ipv4_net_to_type(struct in_addr net)
+{
+	unsigned byte1 = (ntohl(net.s_addr) >> 24) & 0xff;
+	unsigned byte2 = (ntohl(net.s_addr) >> 16) & 0xff;
+	unsigned byte3 = (ntohl(net.s_addr) >> 8) & 0xff;
+	unsigned byte4 = (ntohl(net.s_addr)) & 0xff;
+
+	if (byte1 == 0) {
+		return "This host on this network";
+	}
+
+	if (byte1 == 10) {
+		return "Private Use";
+	}
+
+	if (byte1 == 100 && (byte2 & 0xc0) == 64) {
+		return "Shared Address Space";
+	}
+
+	if (byte1 == 127) {
+		return "Loopback";
+	}
+
+	if (byte1 == 169 && byte2 == 254) {
+		return "Link Local";
+	}
+
+	if (byte1 == 172 && (byte2 & 0xf0) == 16) {
+		return "Private Use";
+	}
+
+	if (byte1 == 192 && byte2 == 0 && byte3 == 0) {
+		return "IETF Protocol Assignments";
+	}
+
+	if (byte1 == 192 && byte2 == 2 && byte3 == 0) {
+		return "Documentation (TEST-NET-1)";
+	}
+
+	if (byte1 == 192 && byte2 == 51 && byte3 == 100) {
+		return "Documentation (TEST-NET-2)";
+	}
+
+	if (byte1 == 203 && byte2 == 0 && byte3 == 113) {
+		return "Documentation (TEST-NET-3)";
+	}
+
+	if (byte1 == 192 && byte2 == 88 && byte3 == 99) {
+		return "6 to 4 Relay Anycast (Deprecated)";
+	}
+
+	if (byte1 == 192 && byte2 == 52 && byte3 == 193) {
+		return "AMT";
+	}
+
+	if (byte1 == 192 && byte2 == 168) {
+		return "Private Use";
+	}
+
+	if (byte1 == 255 && byte2 == 255 && byte3 == 255 && byte4 == 255) {
+		return "Limited Broadcast";
+	}
+
+	if (byte1 == 192 && (byte2 & 0xfe) == 18) {
+		return "Private Use";
+	}
+
+	if (byte1 >= 224 && byte1 <= 239) {
+		return "Multicast";
+	}
+
+	if ((byte1 & 0xf0) == 240) {
+		return "Reserved";
+	}
+
+	return "Internet or Reserved for Future use";
+}
+
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		  int beSilent, int showHostname)
 {
@@ -338,6 +416,8 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	}
 
 	info->network = strdup(namebuf);
+
+	info->type = ipv4_net_to_type(network);
 
 	if (prefix < 32) {
 		memcpy(&minhost, &network, sizeof(minhost));
