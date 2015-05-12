@@ -1,9 +1,9 @@
 Full Address:	fd0b:a336:4e7d:0000:0000:0000:0000:0000
 Address:	fd0b:a336:4e7d::
-Netmask:	ffff:ffff:ffff:: = 48
 Full Network:	fd0b:a336:4e7d:0000:0000:0000:0000:0000
 Network:	fd0b:a336:4e7d::/48
 Address space:	Unique Local Unicast
+Netmask:	ffff:ffff:ffff:: = 48
 
 HostMin:	fd0b:a336:4e7d::
 HostMax:	fd0b:a336:4e7d:ffff:ffff:ffff:ffff:ffff
