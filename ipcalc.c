@@ -414,19 +414,19 @@ char *ipv6_prefix_to_mask(unsigned prefix, struct in6_addr *mask)
 char *ipv6_net_to_type(struct in6_addr *net)
 {
 	if (!(net->s6_addr[0] & 0xc0) && (net->s6_addr[0] & 0x20)) {
-		return "Global Unicast (RFC4291)";
+		return "Global Unicast";
 	}
 
 	if (!(net->s6_addr[0] & 0x2) && ((net->s6_addr[0] & 0xfc) == 0xfc)) {
-		return "Unique Local Unicast (RFC4193)";
+		return "Unique Local Unicast";
 	}
 
 	if (((net->s6_addr[0] & 0xfe) == 0xfe) && (net->s6_addr[1] & 0x80) && !(net->s6_addr[1] & 0x3f)) {
-		return "Link-Scoped Unicast (RFC4291)";
+		return "Link-Scoped Unicast";
 	}
 
 	if ((net->s6_addr[0] & 0xff) == 0xff) {
-		return "Multicast (RFC4291)";
+		return "Multicast";
 	}
 
 	return "Reserved";
