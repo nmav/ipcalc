@@ -813,10 +813,6 @@ int main(int argc, const char **argv)
 	}
 
 	if (r < 0) {
-		if (!beSilent)
-			fprintf(stderr,
-				"ipcalc: error calculating network: %s/%u\n",
-				ipStr, prefix);
 		return 1;
 	}
 
