@@ -267,6 +267,9 @@ char *ipv4_net_to_type(struct in_addr net)
 	unsigned byte3 = (ntohl(net.s_addr) >> 8) & 0xff;
 	unsigned byte4 = (ntohl(net.s_addr)) & 0xff;
 
+	/* based on IANA's iana-ipv4-special-registry and ipv4-address-space
+	 * Updated: 2015-05-12
+	 */
 	if (byte1 == 0) {
 		return "This host on this network";
 	}
@@ -493,21 +496,48 @@ char *ipv6_prefix_to_mask(unsigned prefix, struct in6_addr *mask)
 
 char *ipv6_net_to_type(struct in6_addr *net)
 {
-	if (!(net->s6_addr[0] & 0xc0) && (net->s6_addr[0] & 0x20)) {
+	uint16_t word1 = net->s6_addr[0] << 8 | net->s6_addr[1];
+	uint16_t word2 = net->s6_addr[2] << 8 | net->s6_addr[3];
+
+	/* based on IANA's iana-ipv6-special-registry and ipv6-address-space 
+	 * Updated: 2015-05-12
+	 */
+	if (memcmp(net->s6_addr, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01", 16) == 0)
+		return "Loopback Address";
+
+	if (memcmp(net->s6_addr, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 16) == 0)
+		return "Unspecified Address";
+
+	if (memcmp(net->s6_addr, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff", 12) == 0)
+		return "IPv4-mapped Address";
+
+	if (memcmp(net->s6_addr, "\x00\x64\xff\x9b\x00\x00\x00\x00\x00\x00\x00\x00", 12) == 0)
+		return "IPv4-IPv6 Translat.";
+
+	if (memcmp(net->s6_addr, "\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 12) == 0)
+		return "Discard-Only Address Block";
+
+	if ((word1 & 0xfffe) == 0x2001 && word2 == 0)
+		return "IETF Protocol Assignments";
+
+	if ((word1 & 0xe000) == 0x2000) {
 		return "Global Unicast";
 	}
 
-	if (!(net->s6_addr[0] & 0x2) && ((net->s6_addr[0] & 0xfc) == 0xfc)) {
+	if (((net->s6_addr[0] & 0xfe) == 0xfc)) {
 		return "Unique Local Unicast";
 	}
 
-	if (((net->s6_addr[0] & 0xfe) == 0xfe) && (net->s6_addr[1] & 0x80) && !(net->s6_addr[1] & 0x3f)) {
+	if ((word1 & 0xffc0) == 0xfe80) {
 		return "Link-Scoped Unicast";
 	}
 
 	if ((net->s6_addr[0] & 0xff) == 0xff) {
 		return "Multicast";
 	}
+
+	if ((word1 & 0xfffe) == 0x2002)
+		return "6to4";
 
 	return "Reserved";
 }
