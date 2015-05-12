@@ -249,6 +249,7 @@ int ipv4_mask_to_int(const char *prefix)
 }
 
 typedef struct ip_info_st {
+	char *ip;
 	char *expanded_ip;
 	char *expanded_network;
 
@@ -390,6 +391,14 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 			fprintf(stderr, "ipcalc: bad IPv4 prefix %d\n", prefix);
 		return -1;
 	}
+
+	if (inet_ntop(AF_INET, &ip, namebuf, sizeof(namebuf)) == 0) {
+		if (!beSilent)
+			fprintf(stderr,
+				"ipcalc: error calculating the IPv6 network\n");
+		return -1;
+	}
+	info->ip = strdup(namebuf);
 
 	netmask = prefix2mask(prefix);
 	memset(&namebuf, '\0', sizeof(namebuf));
@@ -597,6 +606,15 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	/* expand  */
 	info->expanded_ip = expand_ipv6(&ip6);
+
+	if (inet_ntop(AF_INET6, &ip6, errBuf, sizeof(errBuf)) == 0) {
+		if (!beSilent)
+			fprintf(stderr,
+				"ipcalc: error calculating the IPv6 network\n");
+		return -1;
+	}
+
+	info->ip = strdup(errBuf);
 
 	if (prefix == 0 || prefix > 128) {
 		if (!beSilent)
@@ -835,12 +853,20 @@ int main(int argc, const char **argv)
 
 	/* we know what we want to display now, so display it. */
 	if (doInfo) {
-		if (info.expanded_ip)
-			printf("Full Address:\t%s\n", info.expanded_ip);
-		printf("Address:\t%s\n", ipStr);
+		unsigned single_host = 0;
 
-		if ((familyIPv6 && info.prefix != 128) ||
-		    (!familyIPv6 && info.prefix != 32)) {
+		if ((familyIPv6 && info.prefix == 128) ||
+		    (!familyIPv6 && info.prefix == 32)) {
+		    	single_host = 1;
+		}
+
+		if (single_host || strcmp(info.network, info.ip) != 0) {
+			if (info.expanded_ip)
+				printf("Full Address:\t%s\n", info.expanded_ip);
+			printf("Address:\t%s\n", info.ip);
+		}
+
+		if (!single_host) {
 			if (info.expanded_network)
 				printf("Full Network:\t%s\n",
 				       info.expanded_network);
