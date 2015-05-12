@@ -637,7 +637,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 int main(int argc, const char **argv)
 {
 	int showBroadcast = 0, showPrefix = 0, showNetwork = 0;
-	int showHostname = 0, showNetmask = 0;
+	int showHostname = 0, showNetmask = 0, showAddrSpace = 0;
 	int showHostMax = 0, showHostMin = 0;
 	int beSilent = 0;
 	int doCheck = 0, familyIPv6 = 0, doInfo = 0;
@@ -671,6 +671,8 @@ int main(int argc, const char **argv)
 		 "Display the minimum address in the network",},
 		{"maxaddr", '\0', 0, &showHostMax, 0,
 		 "Display the maximum address in the network",},
+		{"addrspace", '\0', 0, &showAddrSpace, 0,
+		 "Display the address space the network resides on",},
 		{"silent", 's', 0, &beSilent, 0,
 		 "Don't ever display error messages"},
 		POPT_AUTOHELP {NULL, '\0', 0, 0, 0, NULL, NULL}
@@ -791,7 +793,7 @@ int main(int argc, const char **argv)
 
 	/* if no option is given, print information on IP */
 	if (!(showNetmask | showPrefix | showBroadcast | showNetwork |
-	      showHostMin | showHostMax | showHostname | doInfo)) {
+	      showHostMin | showHostMax | showHostname | doInfo | showAddrSpace)) {
 		doInfo = 1;
 	}
 
@@ -855,6 +857,10 @@ int main(int argc, const char **argv)
 
 		if (showHostMax && info.hostmax) {
 			printf("MAXADDR=%s\n", info.hostmax);
+		}
+
+		if (showAddrSpace && info.type) {
+			printf("ADDRSPACE=\"%s\"\n", info.type);
 		}
 
 		if (showHostname) {
