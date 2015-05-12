@@ -498,7 +498,7 @@ char *ipv6_prefix_to_mask(unsigned prefix, struct in6_addr *mask)
 	return strdup(buf);
 }
 
-char *ipv6_net_to_type(struct in6_addr *net)
+char *ipv6_net_to_type(struct in6_addr *net, int prefix)
 {
 	uint16_t word1 = net->s6_addr[0] << 8 | net->s6_addr[1];
 	uint16_t word2 = net->s6_addr[2] << 8 | net->s6_addr[3];
@@ -506,29 +506,29 @@ char *ipv6_net_to_type(struct in6_addr *net)
 	/* based on IANA's iana-ipv6-special-registry and ipv6-address-space 
 	 * Updated: 2015-05-12
 	 */
-	if (memcmp
+	if (prefix == 128 && memcmp
 	    (net->s6_addr,
 	     "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01",
 	     16) == 0)
 		return "Loopback Address";
 
-	if (memcmp
+	if (prefix == 128 && memcmp
 	    (net->s6_addr,
 	     "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
 	     16) == 0)
 		return "Unspecified Address";
 
-	if (memcmp
+	if (prefix >= 96 && memcmp
 	    (net->s6_addr, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff",
 	     12) == 0)
 		return "IPv4-mapped Address";
 
-	if (memcmp
+	if (prefix >= 96 && memcmp
 	    (net->s6_addr, "\x00\x64\xff\x9b\x00\x00\x00\x00\x00\x00\x00\x00",
 	     12) == 0)
 		return "IPv4-IPv6 Translat.";
 
-	if (memcmp
+	if (prefix >= 96 && memcmp
 	    (net->s6_addr, "\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
 	     12) == 0)
 		return "Discard-Only Address Block";
@@ -631,7 +631,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	info->network = strdup(errBuf);
 
 	info->expanded_network = expand_ipv6(&network);
-	info->type = ipv6_net_to_type(&network);
+	info->type = ipv6_net_to_type(&network, prefix);
 
 	if (prefix < 128) {
 		info->hostmin = strdup(errBuf);
