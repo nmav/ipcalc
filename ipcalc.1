@@ -1,0 +1,91 @@
+.TH IPCALC 1 "April 30 2001" "Red Hat, Inc." \" -*- nroff -*-
+.SH NAME
+ipcalc \- perform simple manipulation of IP addresses
+.SH SYNOPSIS
+.B ipcalc
+[\fIOPTION\fR]... <\fBIP address\fR>[\fI/prefix\fR] [\fInetmask\fR]
+
+.SH DESCRIPTION
+\fBipcalc\fR provides a simple way to calculate IP information for a host.
+The various options specify what information \fBipcalc\fR should display
+on standard out. Multiple options may be specified.  An IP address to
+operate on must always be specified.  Most operations also require a
+netmask or a CIDR prefix as well.
+
+.SH OPTIONS
+.TP
+.TP
+\fB\-c\fR, \fB\-\-check\fR
+Validate the IP address under the specified family.  If no address
+family is specified, IPv4 is assumed.
+
+.TP
+\fB\-4\fR, \fB\-\-ipv4\fR
+Specify IPv4 address family (option is deprecated).
+
+.TP
+\fB\-6\fR, \fB\-\-ipv6\fR
+Specify IPv6 address family (option is deprecated).
+
+.TP
+\fB\-b\fR, \fB\-\-broadcast\fR
+Display the broadcast address for the given IP address and netmask.
+
+.TP
+\fB\-h\fR, \fB\-\-hostname\fR
+Display the hostname for the given IP address.
+
+.TP
+\fB\-m\fR, \fB\-\-netmask\fR
+Calculate the netmask for the given IP address. It assumes that the IP
+address is in a complete class A, B, or C network. Many networks do
+not use the default netmasks, in which case an inappropriate value will
+be returned.
+
+.TP
+\fB\-p\fR, \fB\-\-prefix\fR
+Show the prefix for the given mask/IP address.
+
+.TP
+\fB\-n\fR, \fB\-\-network\fR 
+Display the network address for the given IP address and netmask.
+
+.TP
+\fB\   \fR \fB\-\-minaddr\fR 
+Display the minimum host address in the provided network.
+
+.TP
+\fB\   \fR \fB\-\-maxaddr\fR 
+Display the maximum host address in the provided network.
+
+.TP
+\fB\   \fR \fB\-\-addrspace\fR 
+Display address space allocation information for the provided network.
+
+.TP
+\fB\-i\fR, \fB\-\-info\fR 
+Display generic information on the provided network (default).
+
+.TP
+\fB\-s\fR, \fB\-\-silent\fR 
+Don't ever display error messages.
+
+.SH AUTHORS
+.nf
+Erik Troan <ewt@redhat.com>
+.nf
+Preston Brown <pbrown@redhat.com>
+.nf
+Nikos Mavrogiannopoulos <nmav@redhat.com>
+
+.TP
+IPv6 supported wedged in by David Cantrell <dcantrell@redhat.com>
+.fi
+.SH "REPORTING BUGS"
+Report bugs at http://bugzilla.redhat.com/
+.SH COPYRIGHT
+Copyright \(co 1997-2015 Red Hat, Inc.
+.br
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE.
