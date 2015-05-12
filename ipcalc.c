@@ -29,10 +29,14 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/stat.h> /* open */
+#include <fcntl.h> /* open */
+#include <unistd.h> /* read */
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <errno.h>
+#include <time.h> /* clock_gettime */
 
 /*!
   \file ipcalc.c
@@ -684,6 +688,100 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	return 0;
 }
 
+static int randomize(void *ptr, unsigned size)
+{
+	int fd, ret;
+
+	fd = open("/dev/urandom", O_RDONLY);
+	if (fd < 0)
+		return -1;
+
+	ret = read(fd, ptr, size);
+	close(fd);
+
+	if (ret != size) {
+		return -1;
+	}
+
+	return 0;
+}
+
+static char *generate_ip_network(int ipv6, unsigned prefix)
+{
+	struct timespec ts;
+	char ipbuf[64];
+	char *p = NULL;
+
+	if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) < 0)
+		return NULL;
+
+	if (ipv6) {
+		struct in6_addr net;
+
+		net.s6_addr[0] = 0xfc;
+		net.s6_addr[0] |= ts.tv_nsec&1;
+		if (randomize(&net.s6_addr[1], 15) < 0)
+			return NULL;
+
+		if (inet_ntop(AF_INET6, &net, ipbuf, sizeof(ipbuf)) == NULL)
+			return NULL;
+	} else {
+		struct in_addr net;
+		unsigned c = ts.tv_nsec%3;
+		uint8_t byte1, byte2, byte3, byte4;
+
+		if (prefix >= 16 && c != 0) {
+			if (c==1) {
+				byte1 = 192;
+				byte2 = 168;
+				byte3 = (ts.tv_nsec >> 16) & 0xff;
+				byte4 = (ts.tv_nsec >> 8) & 0xff;
+			} else {
+				byte1 = 172;
+				byte2 = 16 | ((ts.tv_nsec >> 4) & 0x0f);
+				byte4 = (ts.tv_nsec >> 16) & 0xff;
+				byte3 = (ts.tv_nsec >> 8) & 0xff;
+			}
+		} else {
+			byte1 = 10;
+			byte2 = (ts.tv_nsec >> 16) & 0xff;
+			byte3 = (ts.tv_nsec >>  8) & 0xff;
+			byte4 = (ts.tv_nsec      ) & 0xff;
+		}
+
+		net.s_addr = (byte1<<24)|(byte2<<16)|(byte3<<8)|byte4;
+		net.s_addr = htonl(net.s_addr);
+
+		if (inet_ntop(AF_INET, &net, ipbuf, sizeof(ipbuf)) == NULL)
+			return NULL;
+	}
+
+	if (asprintf(&p, "%s/%u", ipbuf, prefix) == -1)
+		return NULL;
+
+	return p;
+}
+
+static
+int str_to_prefix(int ipv6, const char *prefixStr)
+{		
+	int prefix, r;
+	if (!ipv6 && strchr(prefixStr, '.')) {	/* prefix is 255.x.x.x */
+		prefix = ipv4_mask_to_int(prefixStr);
+	} else {
+		r = safe_atoi(prefixStr, &prefix);
+		if (r != 0) {
+			return -1;
+		}
+	}
+
+	if (prefix <= 0 || ((ipv6 && prefix > 128) ||
+	    (!ipv6 && prefix > 32))) {
+		return -1;
+	}
+	return prefix;
+}
+
 /*!
   \fn main(int argc, const char **argv)
   \brief wrapper program for ipcalc functions.
@@ -700,7 +798,7 @@ int main(int argc, const char **argv)
 	int showHostMax = 0, showHostMin = 0;
 	int beSilent = 0;
 	int doCheck = 0, familyIPv6 = 0, doInfo = 0;
-	int rc, familyIPv4 = 0;
+	int rc, familyIPv4 = 0, doRandom = 0;
 	poptContext optCon;
 	char *ipStr, *prefixStr, *netmaskStr = NULL, *chptr;
 	int prefix = -1;
@@ -710,6 +808,8 @@ int main(int argc, const char **argv)
 	struct poptOption optionsTable[] = {
 		{"check", 'c', 0, &doCheck, 0,
 		 "Validate IP address",},
+		{"random-private", 'r', 0, &doRandom, 0,
+		 "Generate a random private IP network",},
 		{"info", 'i', 0, &doInfo, 0,
 		 "Print information on the provided IP address",},
 		{"ipv4", '4', 0, &familyIPv4, 0,
@@ -752,10 +852,33 @@ int main(int argc, const char **argv)
 
 	if (!(ipStr = (char *)poptGetArg(optCon))) {
 		if (!beSilent) {
-			fprintf(stderr, "ipcalc: ip address expected\n");
+			if (doRandom)
+				fprintf(stderr, "ipcalc: network prefix expected\n");
+			else
+				fprintf(stderr, "ipcalc: ip address expected\n");
 			poptPrintHelp(optCon, stderr, 0);
 		}
 		return 1;
+	}
+
+	if (doRandom) {
+		prefix = str_to_prefix(familyIPv6, ipStr);
+		if (prefix <= 0) {
+			if (!beSilent)
+				fprintf(stderr,
+					"ipcalc: bad prefix: %s\n",
+					ipStr);
+			return 1;
+		}
+
+		ipStr = generate_ip_network(familyIPv6, prefix);
+		if (ipStr == NULL) {
+			if (!beSilent)
+				fprintf(stderr,
+					"ipcalc: cannot generate network with prefix: %u\n",
+					prefix);
+			return 1;
+		}
 	}
 
 	/* if there is a : in the address, it is an IPv6 address.
@@ -777,23 +900,11 @@ int main(int argc, const char **argv)
 	}
 
 	if (prefixStr != NULL) {
-		if (!familyIPv6 && strchr(prefixStr, '.')) {	/* prefix is 255.x.x.x */
-			prefix = ipv4_mask_to_int(prefixStr);
-		} else {
-			r = safe_atoi(prefixStr, &prefix);
-			if (r != 0) {
-				if (!beSilent)
-					fprintf(stderr,
-						"ipcalc: bad prefix: %s\n",
-						prefixStr);
-				return 1;
-			}
-		}
-
-		if (prefix < 0 || ((familyIPv6 && prefix > 128)
-				   || (!familyIPv6 && prefix > 32))) {
+		prefix = str_to_prefix(familyIPv6, prefixStr);
+		if (prefix <= 0) {
 			if (!beSilent)
-				fprintf(stderr, "ipcalc: bad prefix: %s\n",
+				fprintf(stderr,
+					"ipcalc: bad prefix: %s\n",
 					prefixStr);
 			return 1;
 		}
@@ -860,7 +971,7 @@ int main(int argc, const char **argv)
 		    	single_host = 1;
 		}
 
-		if (single_host || strcmp(info.network, info.ip) != 0) {
+		if (!doRandom && (single_host || strcmp(info.network, info.ip) != 0)) {
 			if (info.expanded_ip)
 				printf("Full Address:\t%s\n", info.expanded_ip);
 			printf("Address:\t%s\n", info.ip);
