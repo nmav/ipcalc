@@ -334,8 +334,8 @@ char *ipv4_net_to_type(struct in_addr net)
 		return "Limited Broadcast";
 	}
 
-	if (byte1 == 192 && (byte2 & 0xfe) == 18) {
-		return "Private Use";
+	if (byte1 == 198 && (byte2 & 0xfe) == 18) {
+		return "Benchmarking";
 	}
 
 	if (byte1 >= 224 && byte1 <= 239) {
