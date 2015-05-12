@@ -682,7 +682,7 @@ int main(int argc, const char **argv)
 	int showHostMax = 0, showHostMin = 0;
 	int beSilent = 0;
 	int doCheck = 0, familyIPv6 = 0, doInfo = 0;
-	int rc;
+	int rc, familyIPv4 = 0;
 	poptContext optCon;
 	char *ipStr, *prefixStr, *netmaskStr = NULL, *chptr;
 	int prefix = -1;
@@ -694,9 +694,9 @@ int main(int argc, const char **argv)
 		 "Validate IP address",},
 		{"info", 'i', 0, &doInfo, 0,
 		 "Print information on the provided IP address",},
-		{"ipv4", '4', 0, NULL, 0,
+		{"ipv4", '4', 0, &familyIPv4, 0,
 		 "IPv4 address family (deprecated)",},
-		{"ipv6", '6', 0, NULL, 0,
+		{"ipv6", '6', 0, &familyIPv6, 0,
 		 "IPv6 address family (deprecated)",},
 		{"broadcast", 'b', 0, &showBroadcast, 0,
 		 "Display calculated broadcast address",},
@@ -740,8 +740,12 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	/* if there is a : in the address, it is an IPv6 address */
-	if (strchr(ipStr, ':') != NULL) {
+	/* if there is a : in the address, it is an IPv6 address.
+	 * Note that we allow -4, and -6 to be given explicitly, so
+	 * that the tool can be used to check for a valid IPv4 or IPv6
+	 * address.
+	 */
+	if (familyIPv4 == 0 && strchr(ipStr, ':') != NULL) {
 		familyIPv6 = 1;
 	}
 
