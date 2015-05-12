@@ -779,10 +779,13 @@ int main(int argc, const char **argv)
 			printf("Broadcast:\t%s\n", info.broadcast);
 		printf("\n");
 
-		if (info.hostmin)
-			printf("HostMin:\t%s\n", info.hostmin);
-		if (info.hostmax)
-			printf("HostMax:\t%s\n", info.hostmax);
+		if ((familyIPv6 && info.prefix != 128) || 
+		    (!familyIPv6 && info.prefix != 32)) {
+			if (info.hostmin)
+				printf("HostMin:\t%s\n", info.hostmin);
+			if (info.hostmax)
+				printf("HostMax:\t%s\n", info.hostmax);
+		}
 
 		if (!familyIPv6) {
 			unsigned hosts;
