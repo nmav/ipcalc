@@ -841,14 +841,14 @@ int main(int argc, const char **argv)
 
 		if ((familyIPv6 && info.prefix != 128) ||
 		    (!familyIPv6 && info.prefix != 32)) {
-			printf("Netmask:\t%s = %u\n", info.netmask,
-			       info.prefix);
 			if (info.expanded_network)
 				printf("Full Network:\t%s\n",
 				       info.expanded_network);
 			printf("Network:\t%s/%u\n", info.network, info.prefix);
 			if (info.type)
 				printf("Address space:\t%s\n", info.type);
+			printf("Netmask:\t%s = %u\n", info.netmask,
+			       info.prefix);
 
 			if (info.broadcast)
 				printf("Broadcast:\t%s\n", info.broadcast);
