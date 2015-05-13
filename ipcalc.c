@@ -261,6 +261,7 @@ typedef struct ip_info_st {
 	char *broadcast;	/* ipv4 only */
 	char *netmask;
 	char *hostname;
+	char hosts[64];		/* number of hosts in text */
 	unsigned prefix;
 
 	char *hostmin;
@@ -493,6 +494,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
 	char namebuf[INET6_ADDRSTRLEN + 1];
 	char errBuf[250];
+	unsigned hosts;
 
 	memset(info, 0, sizeof(*info));
 
@@ -605,6 +607,13 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	} else {
 		info->hostmin = info->network;
 		info->hostmax = info->network;
+	}
+
+	if (prefix >= 31) {
+		snprintf(info->hosts, sizeof(info->hosts), "%s", p2_table(32 - prefix));
+	} else {
+		hosts = (1 << (32 - prefix)) - 2;
+		snprintf(info->hosts, sizeof(info->hosts), "%u", hosts);
 	}
 
 	if (showHostname) {
@@ -811,6 +820,8 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 		info->hostmax = info->network;
 	}
 
+	snprintf(info->hosts, sizeof(info->hosts), "%s", p2_table(128 - prefix));
+
 	if (showHostname) {
 		info->hostname = get_hostname(AF_INET6, &ip6);
 		if (info->hostname == NULL) {
@@ -933,7 +944,7 @@ int main(int argc, const char **argv)
 {
 	int showBroadcast = 0, showPrefix = 0, showNetwork = 0;
 	int showHostname = 0, showNetmask = 0, showAddrSpace = 0;
-	int showHostMax = 0, showHostMin = 0;
+	int showHostMax = 0, showHostMin = 0, showHosts = 0;
 	int beSilent = 0;
 	int doCheck = 0, familyIPv6 = 0, doInfo = 0;
 	int rc, familyIPv4 = 0, doRandom = 0;
@@ -968,6 +979,8 @@ int main(int argc, const char **argv)
 		 "Display the minimum address in the network",},
 		{"maxaddr", '\0', 0, &showHostMax, 0,
 		 "Display the maximum address in the network",},
+		{"addresses", '\0', 0, &showHosts, 0,
+		 "Display the maximum number of addresses in the network",},
 		{"addrspace", '\0', 0, &showAddrSpace, 0,
 		 "Display the address space the network resides on",},
 		{"silent", 's', 0, &beSilent, 0,
@@ -1135,17 +1148,7 @@ int main(int argc, const char **argv)
 			if (info.hostmax)
 				printf("HostMax:\t%s\n", info.hostmax);
 
-			if (!familyIPv6) {
-				unsigned hosts;
-				if (info.prefix >= 31)
-					hosts = (1 << (32 - info.prefix));
-				else
-					hosts = (1 << (32 - info.prefix)) - 2;
-				printf("Hosts/Net:\t%u\n", hosts);
-			} else {
-				printf("Hosts/Net:\t%s\n",
-				       p2_table(128 - info.prefix));
-			}
+			printf("Hosts/Net:\t%s\n", info.hosts);
 		} else {
 			if (info.type)
 				printf("Address space:\t%s\n", info.type);
@@ -1179,6 +1182,10 @@ int main(int argc, const char **argv)
 
 		if (showAddrSpace && info.type) {
 			printf("ADDRSPACE=\"%s\"\n", info.type);
+		}
+
+		if (showHosts) {
+			printf("ADDRESSES=\"%s\"\n", info.hosts);
 		}
 
 		if (showHostname) {
