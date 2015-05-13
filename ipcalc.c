@@ -910,10 +910,10 @@ static char *generate_ip_network(int ipv6, unsigned prefix)
 			return NULL;
 	} else {
 		struct in_addr net;
-		unsigned c = ts.tv_nsec % 3;
+		unsigned c = ts.tv_nsec % 4;
 		uint8_t byte1, byte2, byte3, byte4;
 
-		if (prefix >= 16 && c != 0) {
+		if (prefix >= 16 && c < 2) {
 			if (c == 1) {
 				byte1 = 192;
 				byte2 = 168;
