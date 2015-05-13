@@ -273,6 +273,7 @@ typedef struct ip_info_st {
 	char *hostmin;
 	char *hostmax;
 	const char *type;
+	const char *class;
 } ip_info_st;
 
 /* Returns powers of two in textual format */
@@ -413,7 +414,7 @@ const char *p2_table(unsigned pow)
 	return "";
 }
 
-char *ipv4_net_to_type(struct in_addr net)
+const char *ipv4_net_to_type(struct in_addr net)
 {
 	unsigned byte1 = (ntohl(net.s_addr) >> 24) & 0xff;
 	unsigned byte2 = (ntohl(net.s_addr) >> 16) & 0xff;
@@ -492,6 +493,29 @@ char *ipv4_net_to_type(struct in_addr net)
 	}
 
 	return "Internet or Reserved for Future use";
+}
+
+const char *ipv4_net_to_class(struct in_addr net)
+{
+	unsigned byte1 = (ntohl(net.s_addr) >> 24) & 0xff;
+
+	if (byte1 >= 0 && byte1 < 128) {
+		return "Class A";
+	}
+
+	if (byte1 >= 128 && byte1 < 192) {
+		return "Class B";
+	}
+
+	if (byte1 >= 192 && byte1 < 224) {
+		return "Class C";
+	}
+
+	if (byte1 >= 224 && byte1 < 239) {
+		return "Class D";
+	}
+
+	return "Class E";
 }
 
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
@@ -586,6 +610,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	info->network = strdup(namebuf);
 
 	info->type = ipv4_net_to_type(network);
+	info->class = ipv4_net_to_class(network);
 
 	if (prefix < 32) {
 		memcpy(&minhost, &network, sizeof(minhost));
@@ -1145,6 +1170,8 @@ int main(int argc, const char **argv)
 			printf("Network:\t%s/%u\n", info.network, info.prefix);
 			if (info.type)
 				printf("Address space:\t%s\n", info.type);
+			if (info.class)
+				printf("Address class:\t%s\n", info.class);
 			printf("Netmask:\t%s = %u\n", info.netmask,
 			       info.prefix);
 
@@ -1164,6 +1191,8 @@ int main(int argc, const char **argv)
 		} else {
 			if (info.type)
 				printf("Address space:\t%s\n", info.type);
+			if (info.class)
+				printf("Address class:\t%s\n", info.class);
 
 		}
 	} else {
