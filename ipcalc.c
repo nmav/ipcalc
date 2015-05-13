@@ -1148,7 +1148,10 @@ int main(int argc, const char **argv)
 			if (info.hostmax)
 				printf("HostMax:\t%s\n", info.hostmax);
 
-			printf("Hosts/Net:\t%s\n", info.hosts);
+			if (familyIPv6 && info.prefix < 112)
+				printf("Hosts/Net:\t2^(%u) = %s\n", 128-info.prefix, info.hosts);
+			else
+				printf("Hosts/Net:\t%s\n", info.hosts);
 		} else {
 			if (info.type)
 				printf("Address space:\t%s\n", info.type);
