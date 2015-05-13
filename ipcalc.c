@@ -1107,7 +1107,7 @@ int main(int argc, const char **argv)
 	/* if no option is given, print information on IP */
 	if (!(showNetmask | showPrefix | showBroadcast | showNetwork |
 	      showHostMin | showHostMax | showHostname | doInfo |
-	      showAddrSpace)) {
+	      showHosts | showAddrSpace)) {
 		doInfo = 1;
 	}
 
