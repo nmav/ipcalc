@@ -40,10 +40,10 @@ Display the hostname for the given IP address.
 
 .TP
 \fB\-m\fR, \fB\-\-netmask\fR
-Calculate the netmask for the given IP address. It assumes that the IP
-address is in a complete class A, B, or C network. Many networks do
-not use the default netmasks, in which case an inappropriate value will
-be returned.
+Calculate the netmask for the given IP address. If no mask or prefix
+is provided, in IPv6 a 128-bit mask is assumed, while in IPv4 it assumes
+that the IP address is in a complete class A, B, or C network. Note, 
+however, that many networks no longer use the default netmasks in IPv4.
 
 .TP
 \fB\-p\fR, \fB\-\-prefix\fR

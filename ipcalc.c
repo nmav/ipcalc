@@ -240,6 +240,12 @@ int bit_count(uint32_t i)
 
   \param mask is the netmask, specified as an struct in_addr in network byte order.
   \return the number of significant bits.  */
+static int mask2prefix(struct in_addr mask)
+{
+	return bit_count(ntohl(mask.s_addr));
+}
+
+static
 int ipv4_mask_to_int(const char *prefix)
 {
 	int ret;
@@ -249,7 +255,7 @@ int ipv4_mask_to_int(const char *prefix)
 	if (ret == 0)
 		return -1;
 
-	return bit_count(ntohl(in.s_addr));
+	return mask2prefix(in);
 }
 
 typedef struct ip_info_st {
@@ -498,6 +504,13 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	memset(info, 0, sizeof(*info));
 
+	if (inet_pton(AF_INET, ipStr, &ip) <= 0) {
+		if (!beSilent)
+			fprintf(stderr, "ipcalc: bad IPv4 address: %s\n",
+				ipStr);
+		return -1;
+	}
+
 	/* Handle CIDR entries such as 172/8 */
 	if (prefix >= 0) {
 		char *tmp = (char *)ipStr;
@@ -521,16 +534,12 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 			}
 			ipStr = tmp;
 		}
-	} else {		/* assume single host */
-		prefix = 32;
+	} else {		/* assume good old days classful Internet */
+		netmask = default_netmask(ip);
+		prefix = mask2prefix(netmask);
 	}
 
-	if (inet_pton(AF_INET, ipStr, &ip) <= 0) {
-		if (!beSilent)
-			fprintf(stderr, "ipcalc: bad IPv4 address: %s\n",
-				ipStr);
-		return -1;
-	} else if (prefix > 32) {
+	if (prefix > 32) {
 		if (!beSilent)
 			fprintf(stderr, "ipcalc: bad IPv4 prefix %d\n", prefix);
 		return -1;
@@ -970,7 +979,7 @@ int main(int argc, const char **argv)
 		{"hostname", 'h', 0, &showHostname, 0,
 		 "Show hostname determined via DNS"},
 		{"netmask", 'm', 0, &showNetmask, 0,
-		 "Display default netmask for IP (class A, B, or C)"},
+		 "Display netmask for IP"},
 		{"network", 'n', 0, &showNetwork, 0,
 		 "Display network address",},
 		{"prefix", 'p', 0, &showPrefix, 0,
