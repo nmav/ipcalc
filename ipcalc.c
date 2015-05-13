@@ -1122,8 +1122,8 @@ int main(int argc, const char **argv)
 			single_host = 1;
 		}
 
-		if (!doRandom
-		    && (single_host || strcmp(info.network, info.ip) != 0)) {
+		if ((!doRandom || single_host) &&
+		    (single_host || strcmp(info.network, info.ip) != 0)) {
 			if (info.expanded_ip)
 				printf("Full Address:\t%s\n", info.expanded_ip);
 			printf("Address:\t%s\n", info.ip);
