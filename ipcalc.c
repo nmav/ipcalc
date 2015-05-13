@@ -29,14 +29,14 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/stat.h> /* open */
-#include <fcntl.h> /* open */
-#include <unistd.h> /* read */
+#include <sys/stat.h>		/* open */
+#include <fcntl.h>		/* open */
+#include <unistd.h>		/* read */
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <errno.h>
-#include <time.h> /* clock_gettime */
+#include <time.h>		/* clock_gettime */
 
 /*!
   \file ipcalc.c
@@ -267,6 +267,144 @@ typedef struct ip_info_st {
 	char *hostmax;
 	const char *type;
 } ip_info_st;
+
+/* Returns powers of two in textual format */
+const char *p2_table(unsigned pow)
+{
+	static const char *pow2[] = {
+		"1",
+		"2",
+		"4",
+		"8",
+		"16",
+		"32",
+		"64",
+		"128",
+		"256",
+		"512",
+		"1024",
+		"2048",
+		"4096",
+		"8192",
+		"16384",
+		"32768",
+		"65536",
+		"131072",
+		"262144",
+		"524288",
+		"1048576",
+		"2097152",
+		"4194304",
+		"8388608",
+		"16777216",
+		"33554432",
+		"67108864",
+		"134217728",
+		"268435456",
+		"536870912",
+		"1073741824",
+		"2147483648",
+		"4294967296",
+		"8589934592",
+		"17179869184",
+		"34359738368",
+		"68719476736",
+		"137438953472",
+		"274877906944",
+		"549755813888",
+		"1099511627776",
+		"2199023255552",
+		"4398046511104",
+		"8796093022208",
+		"17592186044416",
+		"35184372088832",
+		"70368744177664",
+		"140737488355328",
+		"281474976710656",
+		"562949953421312",
+		"1125899906842624",
+		"2251799813685248",
+		"4503599627370496",
+		"9007199254740992",
+		"18014398509481984",
+		"36028797018963968",
+		"72057594037927936",
+		"144115188075855872",
+		"288230376151711744",
+		"576460752303423488",
+		"1152921504606846976",
+		"2305843009213693952",
+		"4611686018427387904",
+		"9223372036854775808",
+		"18446744073709551616",
+		"36893488147419103232",
+		"73786976294838206464",
+		"147573952589676412928",
+		"295147905179352825856",
+		"590295810358705651712",
+		"1180591620717411303424",
+		"2361183241434822606848",
+		"4722366482869645213696",
+		"9444732965739290427392",
+		"18889465931478580854784",
+		"37778931862957161709568",
+		"75557863725914323419136",
+		"151115727451828646838272",
+		"302231454903657293676544",
+		"604462909807314587353088",
+		"1208925819614629174706176",
+		"2417851639229258349412352",
+		"4835703278458516698824704",
+		"9671406556917033397649408",
+		"19342813113834066795298816",
+		"38685626227668133590597632",
+		"77371252455336267181195264",
+		"154742504910672534362390528",
+		"309485009821345068724781056",
+		"618970019642690137449562112",
+		"1237940039285380274899124224",
+		"2475880078570760549798248448",
+		"4951760157141521099596496896",
+		"9903520314283042199192993792",
+		"19807040628566084398385987584",
+		"39614081257132168796771975168",
+		"79228162514264337593543950336",
+		"158456325028528675187087900672",
+		"316912650057057350374175801344",
+		"633825300114114700748351602688",
+		"1267650600228229401496703205376",
+		"2535301200456458802993406410752",
+		"5070602400912917605986812821504",
+		"10141204801825835211973625643008",
+		"20282409603651670423947251286016",
+		"40564819207303340847894502572032",
+		"81129638414606681695789005144064",
+		"162259276829213363391578010288128",
+		"324518553658426726783156020576256",
+		"649037107316853453566312041152512",
+		"1298074214633706907132624082305024",
+		"2596148429267413814265248164610048",
+		"5192296858534827628530496329220096",
+		"10384593717069655257060992658440192",
+		"20769187434139310514121985316880384",
+		"41538374868278621028243970633760768",
+		"83076749736557242056487941267521536",
+		"166153499473114484112975882535043072",
+		"332306998946228968225951765070086144",
+		"664613997892457936451903530140172288",
+		"1329227995784915872903807060280344576",
+		"2658455991569831745807614120560689152",
+		"5316911983139663491615228241121378304",
+		"10633823966279326983230456482242756608",
+		"21267647932558653966460912964485513216",
+		"42535295865117307932921825928971026432",
+		"85070591730234615865843651857942052864",
+		"170141183460469231731687303715884105728",
+	};
+	if (pow <= 127)
+		return pow2[pow];
+	return "";
+}
 
 char *ipv4_net_to_type(struct in_addr net)
 {
@@ -719,7 +857,7 @@ static char *generate_ip_network(int ipv6, unsigned prefix)
 		struct in6_addr net;
 
 		net.s6_addr[0] = 0xfc;
-		net.s6_addr[0] |= ts.tv_nsec&1;
+		net.s6_addr[0] |= ts.tv_nsec & 1;
 		if (randomize(&net.s6_addr[1], 15) < 0)
 			return NULL;
 
@@ -727,11 +865,11 @@ static char *generate_ip_network(int ipv6, unsigned prefix)
 			return NULL;
 	} else {
 		struct in_addr net;
-		unsigned c = ts.tv_nsec%3;
+		unsigned c = ts.tv_nsec % 3;
 		uint8_t byte1, byte2, byte3, byte4;
 
 		if (prefix >= 16 && c != 0) {
-			if (c==1) {
+			if (c == 1) {
 				byte1 = 192;
 				byte2 = 168;
 				byte3 = (ts.tv_nsec >> 16) & 0xff;
@@ -745,11 +883,12 @@ static char *generate_ip_network(int ipv6, unsigned prefix)
 		} else {
 			byte1 = 10;
 			byte2 = (ts.tv_nsec >> 16) & 0xff;
-			byte3 = (ts.tv_nsec >>  8) & 0xff;
-			byte4 = (ts.tv_nsec      ) & 0xff;
+			byte3 = (ts.tv_nsec >> 8) & 0xff;
+			byte4 = (ts.tv_nsec) & 0xff;
 		}
 
-		net.s_addr = (byte1<<24)|(byte2<<16)|(byte3<<8)|byte4;
+		net.s_addr =
+		    (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | byte4;
 		net.s_addr = htonl(net.s_addr);
 
 		if (inet_ntop(AF_INET, &net, ipbuf, sizeof(ipbuf)) == NULL)
@@ -764,7 +903,7 @@ static char *generate_ip_network(int ipv6, unsigned prefix)
 
 static
 int str_to_prefix(int ipv6, const char *prefixStr)
-{		
+{
 	int prefix, r;
 	if (!ipv6 && strchr(prefixStr, '.')) {	/* prefix is 255.x.x.x */
 		prefix = ipv4_mask_to_int(prefixStr);
@@ -775,8 +914,7 @@ int str_to_prefix(int ipv6, const char *prefixStr)
 		}
 	}
 
-	if (prefix <= 0 || ((ipv6 && prefix > 128) ||
-	    (!ipv6 && prefix > 32))) {
+	if (prefix <= 0 || ((ipv6 && prefix > 128) || (!ipv6 && prefix > 32))) {
 		return -1;
 	}
 	return prefix;
@@ -853,9 +991,11 @@ int main(int argc, const char **argv)
 	if (!(ipStr = (char *)poptGetArg(optCon))) {
 		if (!beSilent) {
 			if (doRandom)
-				fprintf(stderr, "ipcalc: network prefix expected\n");
+				fprintf(stderr,
+					"ipcalc: network prefix expected\n");
 			else
-				fprintf(stderr, "ipcalc: ip address expected\n");
+				fprintf(stderr,
+					"ipcalc: ip address expected\n");
 			poptPrintHelp(optCon, stderr, 0);
 		}
 		return 1;
@@ -866,8 +1006,7 @@ int main(int argc, const char **argv)
 		if (prefix <= 0) {
 			if (!beSilent)
 				fprintf(stderr,
-					"ipcalc: bad prefix: %s\n",
-					ipStr);
+					"ipcalc: bad prefix: %s\n", ipStr);
 			return 1;
 		}
 
@@ -904,8 +1043,7 @@ int main(int argc, const char **argv)
 		if (prefix <= 0) {
 			if (!beSilent)
 				fprintf(stderr,
-					"ipcalc: bad prefix: %s\n",
-					prefixStr);
+					"ipcalc: bad prefix: %s\n", prefixStr);
 			return 1;
 		}
 	}
@@ -968,10 +1106,11 @@ int main(int argc, const char **argv)
 
 		if ((familyIPv6 && info.prefix == 128) ||
 		    (!familyIPv6 && info.prefix == 32)) {
-		    	single_host = 1;
+			single_host = 1;
 		}
 
-		if (!doRandom && (single_host || strcmp(info.network, info.ip) != 0)) {
+		if (!doRandom
+		    && (single_host || strcmp(info.network, info.ip) != 0)) {
 			if (info.expanded_ip)
 				printf("Full Address:\t%s\n", info.expanded_ip);
 			printf("Address:\t%s\n", info.ip);
@@ -1004,14 +1143,8 @@ int main(int argc, const char **argv)
 					hosts = (1 << (32 - info.prefix)) - 2;
 				printf("Hosts/Net:\t%u\n", hosts);
 			} else {
-				if (info.prefix < sizeof(long) * 8 + 1)
-					printf("Hosts/Net:\t2^(%u)\n",
-					       (128 - info.prefix));
-				else
-					printf("Hosts/Net:\t%lu\n",
-					       (unsigned long)1 << (128 -
-								    info.
-								    prefix));
+				printf("Hosts/Net:\t%s\n",
+				       p2_table(128 - info.prefix));
 			}
 		} else {
 			if (info.type)
