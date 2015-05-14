@@ -39,6 +39,8 @@
 #include <time.h>		/* clock_gettime */
 #include "ipcalc.h"
 
+int beSilent = 0;
+
 /*!
   \file ipcalc.c
   \brief provides utilities for manipulating IP addresses.
@@ -517,7 +519,7 @@ unsigned default_ipv4_prefix(struct in_addr net)
 #define FLAG_GEOIP 1<<1
 
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
-		  int beSilent, unsigned flags)
+		  unsigned flags)
 {
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
 	char namebuf[INET6_ADDRSTRLEN + 1];
@@ -774,7 +776,7 @@ char *expand_ipv6(struct in6_addr *ip6)
 }
 
 int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
-		  int beSilent, unsigned flags)
+		  unsigned flags)
 {
 	struct in6_addr ip6, mask, network;
 	char errBuf[250];
@@ -982,7 +984,6 @@ int main(int argc, const char **argv)
 	int showBroadcast = 0, showPrefix = 0, showNetwork = 0;
 	int showHostname = 0, showNetmask = 0, showAddrSpace = 0;
 	int showHostMax = 0, showHostMin = 0, showHosts = 0;
-	int beSilent = 0;
 	int doCheck = 0, familyIPv6 = 0, doInfo = 0;
 	int rc, familyIPv4 = 0, doRandom = 0, showGeoIP = 0;
 	poptContext optCon;
@@ -1109,7 +1110,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (familyIPv6) {
-		r = get_ipv6_info(ipStr, prefix, &info, beSilent, flags);
+		r = get_ipv6_info(ipStr, prefix, &info, flags);
 	} else {
 		if (showBroadcast || showNetwork || showPrefix) {
 			if (netmaskStr && prefix >= 0) {
@@ -1132,7 +1133,7 @@ int main(int argc, const char **argv)
 				return 1;
 			}
 		}
-		r = get_ipv4_info(ipStr, prefix, &info, beSilent, flags);
+		r = get_ipv4_info(ipStr, prefix, &info, flags);
 	}
 
 	if (r < 0) {

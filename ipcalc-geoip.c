@@ -57,13 +57,18 @@ static GeoIP_id_by_ipnum_func pGeoIP_id_by_ipnum;
 static GeoIP_id_by_ipnum_v6_func pGeoIP_id_by_ipnum_v6;
 static GeoIP_record_by_ipnum_v6_func pGeoIP_record_by_ipnum_v6;
 
+#define LIBNAME LIBPATH"/libGeoIP.so.1"
+
 static int setup_geoip(void)
 {
 	void *ld;
 
-	ld = dlopen(LIBPATH"/libGeoIP.so.1", RTLD_LAZY);
-	if (ld == NULL)
+	ld = dlopen(LIBNAME, RTLD_LAZY);
+	if (ld == NULL) {
+	    	if (beSilent == 0)
+		    	fprintf(stderr, "ipcalc: could not open %s\n", LIBNAME);
 		return -1;
+	}
 
 	p_GeoIP_setup_dbfilename = dlsym(ld, "_GeoIP_setup_dbfilename");
 
@@ -80,6 +85,8 @@ static int setup_geoip(void)
 	    pGeoIP_delete == NULL || pGeoIP_record_by_ipnum == NULL ||
 	    pGeoIP_id_by_ipnum == NULL || pGeoIP_id_by_ipnum_v6 == NULL ||
 	    pGeoIP_record_by_ipnum_v6 == NULL) {
+	    	if (beSilent == 0)
+		    	fprintf(stderr, "ipcalc: could not find symbols in libGeoIP\n");
 	    	return -1;
 	}
 	return 0;
