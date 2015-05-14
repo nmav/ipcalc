@@ -17,7 +17,7 @@ Examples
 $ ./ipcalc 193.92.150.2/24
 Address:	193.92.150.2
 Network:	193.92.150.0/24
-Address space:	Internet or Reserved for Future use
+Address space:	Internet
 Address class:	Class C
 Netmask:	255.255.255.0 = 24
 Broadcast:	193.92.150.255
@@ -37,7 +37,7 @@ BROADCAST=193.92.150.31
 NETWORK=193.92.150.0
 MINADDR=193.92.150.1
 MAXADDR=193.92.150.30
-ADDRSPACE="Internet or Reserved for Future use"
+ADDRSPACE="Internet"
 COUNTRY="Greece"
 ```
 

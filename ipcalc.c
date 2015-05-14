@@ -466,7 +466,7 @@ const char *ipv4_net_to_type(struct in_addr net)
 		return "Reserved";
 	}
 
-	return "Internet or Reserved for Future use";
+	return "Internet";
 }
 
 static
