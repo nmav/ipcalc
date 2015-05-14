@@ -1,6 +1,9 @@
 USE_GEOIP=yes
 USE_DYN_GEOIP=yes
 
+LIBPATH=/usr/lib64
+#LIBPATH=/usr/lib/x86_64-linux-gnu
+
 CC=gcc
 CFLAGS=-O2 -g -Wall
 LDFLAGS=-lpopt
@@ -8,7 +11,7 @@ LDFLAGS=-lpopt
 ifeq ($(USE_GEOIP),yes)
 ifeq ($(USE_DYN_GEOIP),yes)
 LDFLAGS+=-ldl
-CFLAGS+=-DUSE_GEOIP -DUSE_DYN_GEOIP -DLIBPATH="\"/usr/lib64\""
+CFLAGS+=-DUSE_GEOIP -DUSE_DYN_GEOIP -DLIBPATH="\"$(LIBPATH)\""
 else
 LDFLAGS+=-lGeoIP
 CFLAGS+=-DUSE_GEOIP

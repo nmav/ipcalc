@@ -514,6 +514,7 @@ unsigned default_ipv4_prefix(struct in_addr net)
 }
 
 #define FLAG_HOSTNAME 1
+#define FLAG_GEOIP 1<<1
 
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		  int beSilent, unsigned flags)
@@ -646,7 +647,8 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		snprintf(info->hosts, sizeof(info->hosts), "%u", hosts);
 	}
 
-	geo_ipv4_lookup(ip, &info->geoip_country, &info->geoip_city, &info->geoip_coord);
+	if (flags & FLAG_GEOIP)
+		geo_ipv4_lookup(ip, &info->geoip_country, &info->geoip_city, &info->geoip_coord);
 
 	if (flags & FLAG_HOSTNAME) {
 		info->hostname = get_hostname(AF_INET, &ip);
@@ -854,7 +856,8 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	snprintf(info->hosts, sizeof(info->hosts), "%s", p2_table(128 - prefix));
 
-	geo_ipv6_lookup(&ip6, &info->geoip_country, &info->geoip_city, &info->geoip_coord);
+	if (flags & FLAG_GEOIP)
+		geo_ipv6_lookup(&ip6, &info->geoip_country, &info->geoip_city, &info->geoip_coord);
 
 	if (flags & FLAG_HOSTNAME) {
 		info->hostname = get_hostname(AF_INET6, &ip6);
@@ -1072,6 +1075,8 @@ int main(int argc, const char **argv)
 		}
 	}
 
+	if (showGeoIP)
+		flags |= FLAG_GEOIP;
 	if (showHostname)
 		flags |= FLAG_HOSTNAME;
 
