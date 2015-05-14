@@ -100,36 +100,6 @@ struct in_addr prefix2mask(int prefix)
 }
 
 /*!
-  \fn struct in_addr default_netmask(struct in_addr addr)
-
-  \brief returns the default (canonical) netmask associated with specified IP
-  address.
-
-  When the Internet was originally set up, various ranges of IP addresses were
-  segmented into three network classes: A, B, and C.  This function will return
-  a netmask that is associated with the IP address specified defining where it
-  falls in the predefined classes.
-
-  \param addr an IP address in network byte order.
-  \return a netmask in network byte order.  */
-struct in_addr default_netmask(struct in_addr addr)
-{
-	uint32_t saddr = addr.s_addr;
-	struct in_addr mask;
-
-	memset(&mask, 0, sizeof(mask));
-
-	if (((ntohl(saddr) & 0xFF000000) >> 24) <= 127)
-		mask.s_addr = htonl(0xFF000000);
-	else if (((ntohl(saddr) & 0xFF000000) >> 24) <= 191)
-		mask.s_addr = htonl(0xFFFF0000);
-	else
-		mask.s_addr = htonl(0xFFFFFF00);
-
-	return mask;
-}
-
-/*!
   \fn struct in_addr calc_broadcast(struct in_addr addr, int prefix)
 
   \brief calculate broadcast address given an IP address and a prefix length.
@@ -495,6 +465,7 @@ const char *ipv4_net_to_type(struct in_addr net)
 	return "Internet or Reserved for Future use";
 }
 
+static
 const char *ipv4_net_to_class(struct in_addr net)
 {
 	unsigned byte1 = (ntohl(net.s_addr) >> 24) & 0xff;
@@ -516,6 +487,26 @@ const char *ipv4_net_to_class(struct in_addr net)
 	}
 
 	return "Class E";
+}
+
+static
+unsigned default_ipv4_prefix(struct in_addr net)
+{
+	unsigned byte1 = (ntohl(net.s_addr) >> 24) & 0xff;
+
+	if (byte1 >= 0 && byte1 < 128) {
+		return 8;
+	}
+
+	if (byte1 >= 128 && byte1 < 192) {
+		return 16;
+	}
+
+	if (byte1 >= 192 && byte1 < 224) {
+		return 24;
+	}
+
+	return 24;
 }
 
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
@@ -559,8 +550,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 			ipStr = tmp;
 		}
 	} else {		/* assume good old days classful Internet */
-		netmask = default_netmask(ip);
-		prefix = mask2prefix(netmask);
+		prefix = default_ipv4_prefix(ip);
 	}
 
 	if (prefix > 32) {
