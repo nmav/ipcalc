@@ -1004,8 +1004,10 @@ int main(int argc, const char **argv)
 		 "Display calculated broadcast address",},
 		{"hostname", 'h', 0, &showHostname, 0,
 		 "Show hostname determined via DNS"},
+#ifdef USE_GEOIP
 		{"geoip", 'g', 0, &showGeoIP, 0,
 		 "Show GeoIP data"},
+#endif
 		{"netmask", 'm', 0, &showNetmask, 0,
 		 "Display netmask for IP"},
 		{"network", 'n', 0, &showNetwork, 0,
