@@ -37,6 +37,7 @@
 #include <netdb.h>
 #include <errno.h>
 #include <time.h>		/* clock_gettime */
+#include "ipcalc.h"
 
 /*!
   \file ipcalc.c
@@ -237,6 +238,9 @@ typedef struct ip_info_st {
 	char *broadcast;	/* ipv4 only */
 	char *netmask;
 	char *hostname;
+	char *geoip_country;
+	char *geoip_city;
+	char *geoip_coord;
 	char hosts[64];		/* number of hosts in text */
 	unsigned prefix;
 
@@ -509,8 +513,10 @@ unsigned default_ipv4_prefix(struct in_addr net)
 	return 24;
 }
 
+#define FLAG_HOSTNAME 1
+
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
-		  int beSilent, int showHostname)
+		  int beSilent, unsigned flags)
 {
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
 	char namebuf[INET6_ADDRSTRLEN + 1];
@@ -640,7 +646,9 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		snprintf(info->hosts, sizeof(info->hosts), "%u", hosts);
 	}
 
-	if (showHostname) {
+	geo_ipv4_lookup(ip, &info->geoip_country, &info->geoip_city, &info->geoip_coord);
+
+	if (flags & FLAG_HOSTNAME) {
 		info->hostname = get_hostname(AF_INET, &ip);
 
 		if (info->hostname == NULL) {
@@ -764,7 +772,7 @@ char *expand_ipv6(struct in6_addr *ip6)
 }
 
 int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
-		  int beSilent, int showHostname)
+		  int beSilent, unsigned flags)
 {
 	struct in6_addr ip6, mask, network;
 	char errBuf[250];
@@ -846,7 +854,9 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	snprintf(info->hosts, sizeof(info->hosts), "%s", p2_table(128 - prefix));
 
-	if (showHostname) {
+	geo_ipv6_lookup(&ip6, &info->geoip_country, &info->geoip_city, &info->geoip_coord);
+
+	if (flags & FLAG_HOSTNAME) {
 		info->hostname = get_hostname(AF_INET6, &ip6);
 		if (info->hostname == NULL) {
 			if (!beSilent) {
@@ -971,11 +981,12 @@ int main(int argc, const char **argv)
 	int showHostMax = 0, showHostMin = 0, showHosts = 0;
 	int beSilent = 0;
 	int doCheck = 0, familyIPv6 = 0, doInfo = 0;
-	int rc, familyIPv4 = 0, doRandom = 0;
+	int rc, familyIPv4 = 0, doRandom = 0, showGeoIP = 0;
 	poptContext optCon;
 	char *ipStr, *prefixStr, *netmaskStr = NULL, *chptr;
 	int prefix = -1;
 	ip_info_st info;
+	unsigned flags = 0;
 	int r = 0;
 
 	struct poptOption optionsTable[] = {
@@ -993,6 +1004,8 @@ int main(int argc, const char **argv)
 		 "Display calculated broadcast address",},
 		{"hostname", 'h', 0, &showHostname, 0,
 		 "Show hostname determined via DNS"},
+		{"geoip", 'g', 0, &showGeoIP, 0,
+		 "Show GeoIP data"},
 		{"netmask", 'm', 0, &showNetmask, 0,
 		 "Display netmask for IP"},
 		{"network", 'n', 0, &showNetwork, 0,
@@ -1057,6 +1070,9 @@ int main(int argc, const char **argv)
 		}
 	}
 
+	if (showHostname)
+		flags |= FLAG_HOSTNAME;
+
 	/* if there is a : in the address, it is an IPv6 address.
 	 * Note that we allow -4, and -6 to be given explicitly, so
 	 * that the tool can be used to check for a valid IPv4 or IPv6
@@ -1086,7 +1102,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (familyIPv6) {
-		r = get_ipv6_info(ipStr, prefix, &info, beSilent, showHostname);
+		r = get_ipv6_info(ipStr, prefix, &info, beSilent, flags);
 	} else {
 		if (showBroadcast || showNetwork || showPrefix) {
 			if (netmaskStr && prefix >= 0) {
@@ -1109,7 +1125,7 @@ int main(int argc, const char **argv)
 				return 1;
 			}
 		}
-		r = get_ipv4_info(ipStr, prefix, &info, beSilent, showHostname);
+		r = get_ipv4_info(ipStr, prefix, &info, beSilent, flags);
 	}
 
 	if (r < 0) {
@@ -1131,7 +1147,7 @@ int main(int argc, const char **argv)
 	/* if no option is given, print information on IP */
 	if (!(showNetmask | showPrefix | showBroadcast | showNetwork |
 	      showHostMin | showHostMax | showHostname | doInfo |
-	      showHosts | showAddrSpace)) {
+	      showHosts | showGeoIP | showAddrSpace)) {
 		doInfo = 1;
 	}
 
@@ -1185,6 +1201,17 @@ int main(int argc, const char **argv)
 				printf("Address class:\t%s\n", info.class);
 
 		}
+
+		if (info.geoip_country || info.geoip_city || info.geoip_coord) {
+			printf("\n");
+			if (info.geoip_country)
+				printf("Country: %s\n", info.geoip_country);
+			if (info.geoip_city)
+				printf("City: %s\n", info.geoip_city);
+			if (info.geoip_coord)
+				printf("Coordinates: %s\n", info.geoip_coord);
+		}
+
 	} else {
 
 		if (showNetmask) {
@@ -1221,6 +1248,15 @@ int main(int argc, const char **argv)
 
 		if (showHostname) {
 			printf("HOSTNAME=%s\n", info.hostname);
+		}
+
+		if (showGeoIP) {
+			if (info.geoip_country)
+				printf("COUNTRY=\"%s\"\n", info.geoip_country);
+			if (info.geoip_city)
+				printf("CITY=\"%s\"\n", info.geoip_city);
+			if (info.geoip_coord)
+				printf("COORDINATES=\"%s\"\n", info.geoip_coord);
 		}
 	}
 

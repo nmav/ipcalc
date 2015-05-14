@@ -1,10 +1,18 @@
+USE_GEOIP=yes
+
 CC=gcc
 CFLAGS=-O2 -g -Wall
+LDFLAGS=-lpopt
+
+ifeq ($(USE_GEOIP),yes)
+LDFLAGS+=-lGeoIP
+CFLAGS+=-DUSE_GEOIP
+endif
 
 all: ipcalc
 
-ipcalc: ipcalc.c
-	$(CC) $(CFLAGS) $^ -o $@ -lpopt
+ipcalc: ipcalc.c ipcalc-geoip.c
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 clean:
 	rm -f ipcalc
