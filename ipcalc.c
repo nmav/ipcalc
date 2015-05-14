@@ -1207,11 +1207,11 @@ int main(int argc, const char **argv)
 		if (info.geoip_country || info.geoip_city || info.geoip_coord) {
 			printf("\n");
 			if (info.geoip_country)
-				printf("Country: %s\n", info.geoip_country);
+				printf("Country:\t%s\n", info.geoip_country);
 			if (info.geoip_city)
-				printf("City: %s\n", info.geoip_city);
+				printf("City:\t%s\n", info.geoip_city);
 			if (info.geoip_coord)
-				printf("Coordinates: %s\n", info.geoip_coord);
+				printf("Coordinates:\t%s\n", info.geoip_coord);
 		}
 
 	} else {
