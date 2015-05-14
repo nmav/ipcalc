@@ -1,12 +1,18 @@
 USE_GEOIP=yes
+USE_DYN_GEOIP=yes
 
 CC=gcc
 CFLAGS=-O2 -g -Wall
 LDFLAGS=-lpopt
 
 ifeq ($(USE_GEOIP),yes)
+ifeq ($(USE_DYN_GEOIP),yes)
+LDFLAGS+=-ldl
+CFLAGS+=-DUSE_GEOIP -DUSE_DYN_GEOIP -DLIBPATH="\"/usr/lib64\""
+else
 LDFLAGS+=-lGeoIP
 CFLAGS+=-DUSE_GEOIP
+endif
 endif
 
 all: ipcalc

@@ -36,7 +36,69 @@
 # include <GeoIP.h>
 # include <GeoIPCity.h>
 
+# ifdef USE_DYN_GEOIP
+#  include <dlfcn.h>
+
+typedef void (*_GeoIP_setup_dbfilename_func)(void);
+typedef GeoIP * (*GeoIP_open_type_func)(int type, int flags);
+typedef const char * (*GeoIP_country_name_by_id_func)(GeoIP * gi, int id);
+typedef void (*GeoIP_delete_func)(GeoIP * gi);
+typedef GeoIPRecord * (*GeoIP_record_by_ipnum_func)(GeoIP * gi, unsigned long ipnum);
+typedef int (*GeoIP_id_by_ipnum_func)(GeoIP * gi, unsigned long ipnum);
+typedef int (*GeoIP_id_by_ipnum_v6_func)(GeoIP * gi, geoipv6_t ipnum);
+typedef GeoIPRecord *(*GeoIP_record_by_ipnum_v6_func)(GeoIP * gi, geoipv6_t ipnum);
+
+static _GeoIP_setup_dbfilename_func p_GeoIP_setup_dbfilename;
+static GeoIP_open_type_func pGeoIP_open_type;
+static GeoIP_country_name_by_id_func pGeoIP_country_name_by_id;
+static GeoIP_delete_func pGeoIP_delete;
+static GeoIP_record_by_ipnum_func pGeoIP_record_by_ipnum;
+static GeoIP_id_by_ipnum_func pGeoIP_id_by_ipnum;
+static GeoIP_id_by_ipnum_v6_func pGeoIP_id_by_ipnum_v6;
+static GeoIP_record_by_ipnum_v6_func pGeoIP_record_by_ipnum_v6;
+
+static int setup_geoip(void)
+{
+	void *ld;
+
+	ld = dlopen(LIBPATH"/libGeoIP.so.1", RTLD_LAZY);
+	if (ld == NULL)
+		return -1;
+
+	p_GeoIP_setup_dbfilename = dlsym(ld, "_GeoIP_setup_dbfilename");
+
+
+	pGeoIP_open_type = dlsym(ld, "GeoIP_open_type");
+	pGeoIP_country_name_by_id = dlsym(ld, "GeoIP_country_name_by_id");
+	pGeoIP_delete = dlsym(ld, "GeoIP_delete");
+	pGeoIP_record_by_ipnum = dlsym(ld, "GeoIP_record_by_ipnum");
+	pGeoIP_id_by_ipnum = dlsym(ld, "GeoIP_id_by_ipnum");
+	pGeoIP_id_by_ipnum_v6 = dlsym(ld, "GeoIP_id_by_ipnum_v6");
+	pGeoIP_record_by_ipnum_v6 = dlsym(ld, "GeoIP_record_by_ipnum_v6");
+
+	if (pGeoIP_open_type == NULL || pGeoIP_country_name_by_id == NULL ||
+	    pGeoIP_delete == NULL || pGeoIP_record_by_ipnum == NULL ||
+	    pGeoIP_id_by_ipnum == NULL || pGeoIP_id_by_ipnum_v6 == NULL ||
+	    pGeoIP_record_by_ipnum_v6 == NULL) {
+	    	return -1;
+	}
+	return 0;
+}
+
+# else
+
+#  define setup_geoip() 0
+
 extern void _GeoIP_setup_dbfilename(void);
+#  define p_GeoIP_setup_dbfilename _GeoIP_setup_dbfilename
+#  define pGeoIP_open_type GeoIP_open_type
+#  define pGeoIP_country_name_by_id GeoIP_country_name_by_id
+#  define pGeoIP_delete GeoIP_delete
+#  define pGeoIP_record_by_ipnum GeoIP_record_by_ipnum
+#  define pGeoIP_id_by_ipnum GeoIP_id_by_ipnum
+#  define pGeoIP_id_by_ipnum_v6 GeoIP_id_by_ipnum_v6
+#  define pGeoIP_record_by_ipnum_v6 GeoIP_record_by_ipnum_v6
+# endif
 
 void geo_ipv4_lookup(struct in_addr ip, char **country, char **city, char **coord)
 {
@@ -44,28 +106,31 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **city, char **coor
 	GeoIPRecord *gir;
 	int country_id;
 
+	if (setup_geoip() != 0)
+		return;
+
 	ip.s_addr = ntohl(ip.s_addr);
 
-	_GeoIP_setup_dbfilename();
+	p_GeoIP_setup_dbfilename();
 
-	gi = GeoIP_open_type(GEOIP_COUNTRY_EDITION, GEOIP_STANDARD | GEOIP_SILENCE);
+	gi = pGeoIP_open_type(GEOIP_COUNTRY_EDITION, GEOIP_STANDARD | GEOIP_SILENCE);
 	if (gi != NULL) {
 		gi->charset = GEOIP_CHARSET_UTF8;
 
-		country_id = GeoIP_id_by_ipnum(gi, ip.s_addr);
-		if (country_id < 0 || country_id >= (int)GeoIP_num_countries()) {
+		country_id = pGeoIP_id_by_ipnum(gi, ip.s_addr);
+		if (country_id < 0) {
 			return;
 		}
-		*country = strdup(GeoIP_country_name[country_id]);
+		*country = strdup(pGeoIP_country_name_by_id(gi, country_id));
 
-		GeoIP_delete(gi);
+		pGeoIP_delete(gi);
 	}
 
-	gi = GeoIP_open_type(GEOIP_CITY_EDITION_REV1, GEOIP_STANDARD | GEOIP_SILENCE);
+	gi = pGeoIP_open_type(GEOIP_CITY_EDITION_REV1, GEOIP_STANDARD | GEOIP_SILENCE);
 	if (gi != NULL) {
 		gi->charset = GEOIP_CHARSET_UTF8;
 
-		gir = GeoIP_record_by_ipnum(gi, ip.s_addr);
+		gir = pGeoIP_record_by_ipnum(gi, ip.s_addr);
 
 		if (gir && gir->city)
 			*city = strdup(gir->city);
@@ -73,13 +138,13 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **city, char **coor
 		if (gir && gir->longitude != 0 && gir->longitude != 0)
 			asprintf(coord, "%f, %f", gir->latitude, gir->longitude);
 
-		GeoIP_delete(gi);
+		pGeoIP_delete(gi);
 	} else {
-		gi = GeoIP_open_type(GEOIP_CITY_EDITION_REV0, GEOIP_STANDARD | GEOIP_SILENCE);
+		gi = pGeoIP_open_type(GEOIP_CITY_EDITION_REV0, GEOIP_STANDARD | GEOIP_SILENCE);
 		if (gi != NULL) {
 			gi->charset = GEOIP_CHARSET_UTF8;
 
-			gir = GeoIP_record_by_ipnum(gi, ip.s_addr);
+			gir = pGeoIP_record_by_ipnum(gi, ip.s_addr);
 
 			if (gir && gir->city)
 				*city = strdup(gir->city);
@@ -87,7 +152,7 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **city, char **coor
 			if (gir && gir->longitude != 0 && gir->longitude != 0)
 				asprintf(coord, "%f, %f", gir->latitude, gir->longitude);
 
-			GeoIP_delete(gi);
+			pGeoIP_delete(gi);
 		}
 	}
 
@@ -100,26 +165,29 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **city, char **co
 	GeoIPRecord *gir;
 	int country_id;
 
-	_GeoIP_setup_dbfilename();
+	if (setup_geoip() != 0)
+		return;
 
-	gi = GeoIP_open_type(GEOIP_COUNTRY_EDITION_V6, GEOIP_STANDARD | GEOIP_SILENCE);
+	p_GeoIP_setup_dbfilename();
+
+	gi = pGeoIP_open_type(GEOIP_COUNTRY_EDITION_V6, GEOIP_STANDARD | GEOIP_SILENCE);
 	if (gi != NULL) {
 		gi->charset = GEOIP_CHARSET_UTF8;
 
-		country_id = GeoIP_id_by_ipnum_v6(gi, (geoipv6_t)*ip);
-		if (country_id < 0 || country_id >= (int)GeoIP_num_countries()) {
+		country_id = pGeoIP_id_by_ipnum_v6(gi, (geoipv6_t)*ip);
+		if (country_id < 0) {
 			return;
 		}
-		*country = strdup(GeoIP_country_name[country_id]);
+		*country = strdup(pGeoIP_country_name_by_id(gi, country_id));
 
-		GeoIP_delete(gi);
+		pGeoIP_delete(gi);
 	}
 
-	gi = GeoIP_open_type(GEOIP_CITY_EDITION_REV1_V6, GEOIP_STANDARD | GEOIP_SILENCE);
+	gi = pGeoIP_open_type(GEOIP_CITY_EDITION_REV1_V6, GEOIP_STANDARD | GEOIP_SILENCE);
 	if (gi != NULL) {
 		gi->charset = GEOIP_CHARSET_UTF8;
 
-		gir = GeoIP_record_by_ipnum_v6(gi, (geoipv6_t)*ip);
+		gir = pGeoIP_record_by_ipnum_v6(gi, (geoipv6_t)*ip);
 
 		if (gir && gir->city)
 			*city = strdup(gir->city);
@@ -127,13 +195,13 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **city, char **co
 		if (gir && gir->longitude != 0 && gir->longitude != 0)
 			asprintf(coord, "%f, %f", gir->latitude, gir->longitude);
 
-		GeoIP_delete(gi);
+		pGeoIP_delete(gi);
 	} else {
-		gi = GeoIP_open_type(GEOIP_CITY_EDITION_REV0_V6, GEOIP_STANDARD | GEOIP_SILENCE);
+		gi = pGeoIP_open_type(GEOIP_CITY_EDITION_REV0_V6, GEOIP_STANDARD | GEOIP_SILENCE);
 		if (gi != NULL) {
 			gi->charset = GEOIP_CHARSET_UTF8;
 
-			gir = GeoIP_record_by_ipnum_v6(gi, (geoipv6_t)*ip);
+			gir = pGeoIP_record_by_ipnum_v6(gi, (geoipv6_t)*ip);
 
 			if (gir && gir->city)
 				*city = strdup(gir->city);
@@ -141,7 +209,7 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **city, char **co
 			if (gir && gir->longitude != 0 && gir->longitude != 0)
 				asprintf(coord, "%f, %f", gir->latitude, gir->longitude);
 
-			GeoIP_delete(gi);
+			pGeoIP_delete(gi);
 		}
 	}
 
