@@ -1,11 +1,11 @@
-USE_GEOIP=yes
-USE_DYN_GEOIP=yes
+USE_GEOIP?=yes
+USE_DYN_GEOIP?=yes
 
-LIBPATH=/usr/lib64
+LIBPATH?=/usr/lib64
 #LIBPATH=/usr/lib/x86_64-linux-gnu
 
-CC=gcc
-CFLAGS=-O2 -g -Wall
+CC?=gcc
+CFLAGS?=-O2 -g -Wall
 LDFLAGS=-lpopt
 
 ifeq ($(USE_GEOIP),yes)
