@@ -143,7 +143,7 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **city, char **coor
 			*city = strdup(gir->city);
 
 		if (gir && gir->longitude != 0 && gir->longitude != 0)
-			asprintf(coord, "%f, %f", gir->latitude, gir->longitude);
+			asprintf(coord, "%f,%f", gir->latitude, gir->longitude);
 
 		pGeoIP_delete(gi);
 	} else {
@@ -157,7 +157,7 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **city, char **coor
 				*city = strdup(gir->city);
 
 			if (gir && gir->longitude != 0 && gir->longitude != 0)
-				asprintf(coord, "%f, %f", gir->latitude, gir->longitude);
+				asprintf(coord, "%f,%f", gir->latitude, gir->longitude);
 
 			pGeoIP_delete(gi);
 		}
@@ -200,7 +200,7 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **city, char **co
 			*city = strdup(gir->city);
 
 		if (gir && gir->longitude != 0 && gir->longitude != 0)
-			asprintf(coord, "%f, %f", gir->latitude, gir->longitude);
+			asprintf(coord, "%f,%f", gir->latitude, gir->longitude);
 
 		pGeoIP_delete(gi);
 	} else {
@@ -214,7 +214,7 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **city, char **co
 				*city = strdup(gir->city);
 
 			if (gir && gir->longitude != 0 && gir->longitude != 0)
-				asprintf(coord, "%f, %f", gir->latitude, gir->longitude);
+				asprintf(coord, "%f,%f", gir->latitude, gir->longitude);
 
 			pGeoIP_delete(gi);
 		}
