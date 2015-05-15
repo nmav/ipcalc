@@ -1009,8 +1009,8 @@ int main(int argc, const char **argv)
 		{"hostname", 'h', 0, &showHostname, 0,
 		 "Show hostname determined via DNS"},
 #ifdef USE_GEOIP
-		{"geoip", 'g', 0, &showGeoIP, 0,
-		 "Show GeoIP data"},
+		{"geoinfo", 'g', 0, &showGeoIP, 0,
+		 "Show Geographic information about the provided IP"},
 #endif
 		{"netmask", 'm', 0, &showNetmask, 0,
 		 "Display netmask for IP"},
