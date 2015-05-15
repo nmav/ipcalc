@@ -25,12 +25,10 @@ Broadcast:	193.92.150.255
 HostMin:	193.92.150.1
 HostMax:	193.92.150.254
 Hosts/Net:	254
-
-Country:	Greece
 ```
 
 ```
-$ ./ipcalc -pnmb --minaddr --maxaddr --addrspace 193.92.150.2/255.255.255.224 --geoip
+$ ./ipcalc -pnmb --minaddr --maxaddr --geoinfo --addrspace 193.92.150.2/255.255.255.224
 NETMASK=255.255.255.224
 PREFIX=27
 BROADCAST=193.92.150.31
@@ -56,12 +54,10 @@ Netmask:	ffff:ffff:ffff:ffff:: = 64
 HostMin:	2a03:2880:20:4f06::
 HostMax:	2a03:2880:20:4f06:ffff:ffff:ffff:ffff
 Hosts/Net:	2^(64) = 18446744073709551616
-
-Country:	Ireland
 ```
 
 ```
-$ ./ipcalc -pnmb --minaddr --maxaddr --addrspace --geoip 2a03:2880:20:4f06:face:b00c:0:14/64
+$ ./ipcalc -pnmb --minaddr --maxaddr --addrspace --geoinfo 2a03:2880:20:4f06:face:b00c:0:14/64
 NETMASK=ffff:ffff:ffff:ffff::
 PREFIX=64
 NETWORK=2a03:2880:20:4f06::
