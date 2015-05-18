@@ -198,8 +198,6 @@ int bit_count(uint32_t i)
 		i >>= 1;
 	}
 
-	if (c == 0)
-		return -1;
 	return c;
 }
 
@@ -674,7 +672,7 @@ char *ipv6_prefix_to_mask(unsigned prefix, struct in6_addr *mask)
 	int i, j;
 	char buf[128];
 
-	if (prefix == 0 || prefix > 128)
+	if (prefix > 128)
 		return NULL;
 
 	memset(&in6, 0x0, sizeof(in6));
@@ -802,7 +800,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	info->ip = strdup(errBuf);
 
-	if (prefix == 0 || prefix > 128) {
+	if (prefix > 128) {
 		if (!beSilent)
 			fprintf(stderr, "ipcalc: bad IPv6 prefix: %d\n",
 				prefix);
@@ -957,7 +955,7 @@ int str_to_prefix(int ipv6, const char *prefixStr)
 		}
 	}
 
-	if (prefix <= 0 || ((ipv6 && prefix > 128) || (!ipv6 && prefix > 32))) {
+	if (prefix < 0 || ((ipv6 && prefix > 128) || (!ipv6 && prefix > 32))) {
 		return -1;
 	}
 	return prefix;
@@ -1067,7 +1065,7 @@ int main(int argc, const char **argv)
 
 	if (doRandom) {
 		prefix = str_to_prefix(familyIPv6, ipStr);
-		if (prefix <= 0) {
+		if (prefix < 0) {
 			if (!beSilent)
 				fprintf(stderr,
 					"ipcalc: bad prefix: %s\n", ipStr);
@@ -1120,7 +1118,7 @@ int main(int argc, const char **argv)
 
 	if (prefixStr != NULL) {
 		prefix = str_to_prefix(familyIPv6, prefixStr);
-		if (prefix <= 0) {
+		if (prefix < 0) {
 			if (!beSilent)
 				fprintf(stderr,
 					"ipcalc: bad prefix: %s\n", prefixStr);
