@@ -1045,6 +1045,13 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 
+	if (familyIPv6 && familyIPv4) {
+		if (!beSilent)
+			fprintf(stderr,
+				"ipcalc: you cannot specify both IPv4 and IPv6\n");
+		return 1;
+	}
+
 	if (!(ipStr = (char *)poptGetArg(optCon))) {
 		if (!beSilent) {
 			if (doRandom)
@@ -1081,6 +1088,7 @@ int main(int argc, const char **argv)
 		flags |= FLAG_GEOIP;
 	if (showHostname)
 		flags |= FLAG_HOSTNAME;
+
 
 	/* if there is a : in the address, it is an IPv6 address.
 	 * Note that we allow -4, and -6 to be given explicitly, so
