@@ -1,0 +1,17 @@
+* Version 0.1.0 (released 2015-05-18)
+- Added --random-private parameter to generate private networks.
+- IPv4 and IPv6 addresses are now automatically being detected,
+  and the --ipv4 or --ipv6 options are not mandatory to specify.
+- Added the --minaddr and --maxaddr options to print the minimum
+  and maximum addresses in the provided network.
+- Added the --addresses option to print the number of addresses
+  in the provided network.
+- Added the --addrspace option to print the type of the network
+  the address resides on.
+- Added the --geoinfo option to print geographic information about
+  the given IP address. That will work if libGeoIP is found on
+  the system.
+- By default, when no parameters are given, general information
+  about the provided network/address are printed (also as --info
+  option).
+
