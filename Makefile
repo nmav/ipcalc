@@ -4,8 +4,9 @@ USE_DYN_GEOIP?=yes
 LIBPATH?=/usr/lib64
 #LIBPATH=/usr/lib/x86_64-linux-gnu
 
+VERSION=0.1.0
 CC?=gcc
-CFLAGS?=-O2 -g -Wall
+CFLAGS?=-O2 -g -Wall -DVERSION="\"$(VERSION)\""
 LDFLAGS=-lpopt
 
 ifeq ($(USE_GEOIP),yes)

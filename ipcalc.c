@@ -986,6 +986,7 @@ int main(int argc, const char **argv)
 	int showHostMax = 0, showHostMin = 0, showHosts = 0;
 	int doCheck = 0, familyIPv6 = 0, doInfo = 0;
 	int rc, familyIPv4 = 0, doRandom = 0, showGeoIP = 0;
+	int doVersion = 0;
 	poptContext optCon;
 	char *ipStr, *prefixStr, *netmaskStr = NULL, *chptr;
 	int prefix = -1;
@@ -1028,6 +1029,8 @@ int main(int argc, const char **argv)
 		 "Display the address space the network resides on",},
 		{"silent", 's', 0, &beSilent, 0,
 		 "Don't ever display error messages"},
+		{"version", 'v', 0, &doVersion, 0,
+		 "Display program version"},
 		POPT_AUTOHELP {NULL, '\0', 0, 0, 0, NULL, NULL}
 	};
 
@@ -1042,6 +1045,11 @@ int main(int argc, const char **argv)
 			poptPrintHelp(optCon, stderr, 0);
 		}
 		return 1;
+	}
+
+	if (doVersion) {
+		printf("ipcalc %s\n", VERSION);
+		return 0;
 	}
 
 	if (!(ipStr = (char *)poptGetArg(optCon))) {
