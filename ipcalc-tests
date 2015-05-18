@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+# Run some simple ipcalc tests.
+#
+# Adapted from: Matej Susta <msusta@redhat.com>
+#
+#   Copyright (c) 2009 Red Hat, Inc. All rights reserved.
+#
+#   This copyrighted material is made available to anyone wishing
+#   to use, modify, copy, or redistribute it subject to the terms
+#   and conditions of the GNU General Public License version 2.
+#
+#   This program is distributed in the hope that it will be
+#   useful, but WITHOUT ANY WARRANTY; without even the implied
+#   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+#   PURPOSE. See the GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public
+#   License along with this program; if not, write to the Free
+#   Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+#   Boston, MA 02110-1301, USA.
+
+bin=./ipcalc
+exitcode=0
+
+ok() {
+	echo "ok."
+}
+
+fail() {
+	echo "FAILED!"
+	exitcode=$((exitcode+1))
+	echo -e "Output was:\n$output"
+}
+
+TestSuccess() {
+	echo -n "Checking $@... "
+	output=$(sh -c "$1" 2>&1)
+	rc=$?
+	[ $rc -eq 0 ] && ok || fail $output
+}
+
+TestFailure() {
+	echo -n "Checking $@... "
+	output=$(sh -c "$1" 2>&1)
+	rc=$?
+	[ $rc -eq 0 ] && fail $output || ok 
+}
+
+TestOutput() {
+	echo -n "Checking $1... "
+	output=$(sh -c "$1" 2>&1)
+	rc=$?
+	[ "$output" = "$2" ] && ok || fail $output
+}
+
+echo -n "Checking for ipcalc binary... "
+[ -x $bin ] || { fail ; exit $exitcode ; }
+
+TestSuccess "$bin --help"
+
+TestSuccess "$bin -c 127.0.0.1"
+TestSuccess "$bin -c -6 ::1"
+TestSuccess "$bin -c ::1"
+
+TestSuccess "$bin -c 192.168.1.1"
+TestSuccess "$bin -c -6 2a01:198:200:300::2"
+TestSuccess "$bin -c -6 2a01:198:200:300:0000:0000:0000:2"
+TestSuccess "$bin -c -6 2a01:0198:0200:0300:0000:0000:0000:0002"
+TestSuccess "$bin -c -6 ::1/128"
+TestSuccess "$bin -c -6 fec0::1:0:0:c0a8:8002/64"
+
+TestFailure "$bin -c -6 gggg::"
+#TestFailure "$bin -b -6 ::1/128"
+TestFailure "$bin -c -4 -6 2a01:198:200:300:0000:0000:0000:2"
+TestFailure "$bin -c -4 -6 127.0.0.1"
+TestFailure "$bin -c -6 127.0.0.1"
+TestFailure "$bin -c ::1/999"
+TestFailure "$bin -m 192.168.1.1/-1"
+TestFailure "$bin -m 192.168.1.1/64"
+TestFailure "$bin -m 192.168.1.1/99999"
+
+TestOutput "$bin -b 192.168.1.1/24" "BROADCAST=192.168.1.255"
+TestOutput "$bin -b 192.168.1.1 255.255.255.0" "BROADCAST=192.168.1.255"
+TestOutput "$bin -m 192.168.1.1/24" "NETMASK=255.255.255.0"
+TestOutput "$bin -p 192.168.1.1 255.255.255.0" "PREFIX=24"
+TestOutput "$bin -p 192.168.1.1 255.255.255.255" "PREFIX=32"
+TestOutput "$bin -p 192.168.1.1 0.0.0.0" "PREFIX=0"
+TestOutput "$bin -p 172.16.59.222 255.255.252.0" "PREFIX=22"
+TestOutput "$bin -m 172.16.59.222/22" "NETMASK=255.255.252.0"
+TestOutput "$bin -m 192.168.1.1" "NETMASK=255.255.255.0"
+TestOutput "$bin -m 10.1.2.3" "NETMASK=255.0.0.0"
+TestOutput "$bin -m 129.22.4.3" "NETMASK=255.255.0.0"
+TestOutput "$bin -n 192.168.1.1/32" "NETWORK=192.168.1.1"
+TestOutput "$bin -n 192.168.1.1/0" "NETWORK=0.0.0.0"
+
+echo "$exitcode test(s) failed."
+exit $exitcode
