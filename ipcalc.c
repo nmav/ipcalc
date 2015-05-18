@@ -997,7 +997,7 @@ int main(int argc, const char **argv)
 		{"check", 'c', 0, &doCheck, 0,
 		 "Validate IP address",},
 		{"random-private", 'r', 0, &doRandom, 0,
-		 "Generate a random private IP network",},
+		 "Generate a random private IP network using the provided netmask",},
 		{"info", 'i', 0, &doInfo, 0,
 		 "Print information on the provided IP address",},
 		{"ipv4", '4', 0, &familyIPv4, 0,
