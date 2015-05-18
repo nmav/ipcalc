@@ -1,3 +1,8 @@
+* Version 0.1.1 (unreleased)
+- Allow a prefix of 0, or 0.0.0.0 to be compatible with previous
+  tool.
+
+
 * Version 0.1.0 (released 2015-05-18)
 - Added --random-private parameter to generate private networks.
 - IPv4 and IPv6 addresses are now automatically being detected,
