@@ -111,6 +111,7 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **city, char **coor
 	GeoIP *gi;
 	GeoIPRecord *gir;
 	int country_id;
+	const char *p;
 
 	if (setup_geoip() != 0)
 		return;
@@ -127,7 +128,9 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **city, char **coor
 		if (country_id < 0) {
 			return;
 		}
-		*country = strdup(pGeoIP_country_name_by_id(gi, country_id));
+		p = pGeoIP_country_name_by_id(gi, country_id);
+		if (p)
+			*country = strdup(p);
 
 		pGeoIP_delete(gi);
 	}
@@ -170,6 +173,7 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **city, char **co
 	GeoIP *gi;
 	GeoIPRecord *gir;
 	int country_id;
+	const char *p;
 
 	if (setup_geoip() != 0)
 		return;
@@ -184,7 +188,9 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **city, char **co
 		if (country_id < 0) {
 			return;
 		}
-		*country = strdup(pGeoIP_country_name_by_id(gi, country_id));
+		p = pGeoIP_country_name_by_id(gi, country_id);
+		if (p)
+			*country = strdup(p);
 
 		pGeoIP_delete(gi);
 	}
