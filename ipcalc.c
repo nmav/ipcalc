@@ -981,7 +981,7 @@ int main(int argc, const char **argv)
 	int rc, familyIPv4 = 0, doRandom = 0, showGeoIP = 0;
 	int doVersion = 0;
 	poptContext optCon;
-	char *ipStr, *prefixStr, *netmaskStr = NULL, *chptr;
+	char *ipStr, *prefixStr = NULL, *netmaskStr = NULL, *chptr;
 	int prefix = -1;
 	ip_info_st info;
 	unsigned flags = 0;
@@ -1091,13 +1091,23 @@ int main(int argc, const char **argv)
 		familyIPv6 = 1;
 	}
 
-	if (strchr(ipStr, '/') != NULL) {
-		prefixStr = strchr(ipStr, '/') + 1;
-		prefixStr--;
+	if ((chptr = (char *)poptGetArg(optCon))) {
+		if (familyIPv6 == 0) {
+			prefixStr = chptr;
+		} else {
+			if (!beSilent) {
+				fprintf(stderr, "ipcalc: unexpected argument: %s\n",
+					chptr);
+				poptPrintHelp(optCon, stderr, 0);
+			}
+			return 1;
+		}
+	}
+
+	if (prefixStr == NULL && strchr(ipStr, '/') != NULL) {
+		prefixStr = strchr(ipStr, '/');
 		*prefixStr = '\0';	/* fix up ipStr */
 		prefixStr++;
-	} else {
-		prefixStr = NULL;
 	}
 
 	if (prefixStr != NULL) {
@@ -1138,15 +1148,6 @@ int main(int argc, const char **argv)
 	}
 
 	if (r < 0) {
-		return 1;
-	}
-
-	if ((chptr = (char *)poptGetArg(optCon))) {
-		if (!beSilent) {
-			fprintf(stderr, "ipcalc: unexpected argument: %s\n",
-				chptr);
-			poptPrintHelp(optCon, stderr, 0);
-		}
 		return 1;
 	}
 
