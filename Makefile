@@ -6,7 +6,7 @@ LIBPATH?=/usr/lib64
 
 VERSION=0.1.0
 CC?=gcc
-CFLAGS?=-O2 -g -Wall -DVERSION="\"$(VERSION)\""
+CFLAGS?=-O2 -g -Wall
 LDFLAGS=-lpopt
 
 ifeq ($(USE_GEOIP),yes)
@@ -22,7 +22,7 @@ endif
 all: ipcalc
 
 ipcalc: ipcalc.c ipcalc-geoip.c
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) -DVERSION="\"$(VERSION)\"" $^ -o $@ $(LDFLAGS)
 
 clean:
 	rm -f ipcalc
