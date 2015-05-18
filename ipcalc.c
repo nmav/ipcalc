@@ -915,30 +915,24 @@ static char *generate_ip_network(int ipv6, unsigned prefix)
 	} else {
 		struct in_addr net;
 		unsigned c = ts.tv_nsec % 4;
-		uint8_t byte1, byte2, byte3, byte4;
+		uint8_t bytes[4];
+
+		if (randomize(bytes, 4) < 0)
+			return NULL;
 
 		if (prefix >= 16 && c < 2) {
 			if (c == 1) {
-				byte1 = 192;
-				byte2 = 168;
-				byte3 = (ts.tv_nsec >> 16) & 0xff;
-				byte4 = (ts.tv_nsec >> 8) & 0xff;
+				bytes[0] = 192;
+				bytes[1] = 168;
 			} else {
-				byte1 = 172;
-				byte2 = 16 | ((ts.tv_nsec >> 4) & 0x0f);
-				byte4 = (ts.tv_nsec >> 16) & 0xff;
-				byte3 = (ts.tv_nsec >> 8) & 0xff;
+				bytes[0] = 172;
+				bytes[1] = 16 | ((ts.tv_nsec >> 4) & 0x0f);
 			}
 		} else {
-			byte1 = 10;
-			byte2 = (ts.tv_nsec >> 16) & 0xff;
-			byte3 = (ts.tv_nsec >> 8) & 0xff;
-			byte4 = (ts.tv_nsec) & 0xff;
+			bytes[0] = 10;
 		}
 
-		net.s_addr =
-		    (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | byte4;
-		net.s_addr = htonl(net.s_addr);
+		memcpy(&net.s_addr, bytes, 4);
 
 		if (inet_ntop(AF_INET, &net, ipbuf, sizeof(ipbuf)) == NULL)
 			return NULL;
