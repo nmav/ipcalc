@@ -238,6 +238,7 @@ typedef struct ip_info_st {
 	char *netmask;
 	char *hostname;
 	char *geoip_country;
+	char *geoip_ccode;
 	char *geoip_city;
 	char *geoip_coord;
 	char hosts[64];		/* number of hosts in text */
@@ -647,7 +648,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	}
 
 	if (flags & FLAG_GEOIP)
-		geo_ipv4_lookup(ip, &info->geoip_country, &info->geoip_city, &info->geoip_coord);
+		geo_ipv4_lookup(ip, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
 
 	if (flags & FLAG_HOSTNAME) {
 		info->hostname = get_hostname(AF_INET, &ip);
@@ -856,7 +857,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	snprintf(info->hosts, sizeof(info->hosts), "%s", p2_table(128 - prefix));
 
 	if (flags & FLAG_GEOIP)
-		geo_ipv6_lookup(&ip6, &info->geoip_country, &info->geoip_city, &info->geoip_coord);
+		geo_ipv6_lookup(&ip6, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
 
 	if (flags & FLAG_HOSTNAME) {
 		info->hostname = get_hostname(AF_INET6, &ip6);
@@ -1220,6 +1221,8 @@ int main(int argc, const char **argv)
 
 		if (info.geoip_country || info.geoip_city || info.geoip_coord) {
 			printf("\n");
+			if (info.geoip_ccode)
+				printf("Country code:\t%s\n", info.geoip_ccode);
 			if (info.geoip_country)
 				printf("Country:\t%s\n", info.geoip_country);
 			if (info.geoip_city)
@@ -1267,6 +1270,8 @@ int main(int argc, const char **argv)
 		}
 
 		if (showGeoIP) {
+			if (info.geoip_ccode)
+				printf("COUNTRYCODE=%s\n", info.geoip_ccode);
 			if (info.geoip_country)
 				printf("COUNTRY=\"%s\"\n", info.geoip_country);
 			if (info.geoip_city)
