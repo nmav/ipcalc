@@ -236,6 +236,7 @@ typedef struct ip_info_st {
 	char *network;
 	char *broadcast;	/* ipv4 only */
 	char *netmask;
+	char *wildcard;
 	char *hostname;
 	char *geoip_country;
 	char *geoip_city;
@@ -519,6 +520,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		  unsigned flags)
 {
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
+	struct in_addr wildcard;
 	char namebuf[INET6_ADDRSTRLEN + 1];
 	char errBuf[250];
 	unsigned hosts;
@@ -574,6 +576,8 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	info->ip = strdup(namebuf);
 
 	netmask = prefix2mask(prefix);
+	wildcard.s_addr = ~netmask.s_addr;
+
 	memset(&namebuf, '\0', sizeof(namebuf));
 
 	if (inet_ntop(AF_INET, &netmask, namebuf, INET_ADDRSTRLEN) == NULL) {
@@ -582,6 +586,16 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		abort();
 	}
 	info->netmask = strdup(namebuf);
+
+	memset(&namebuf, '\0', sizeof(namebuf));
+
+	if (inet_ntop(AF_INET, &wildcard, namebuf, INET_ADDRSTRLEN) == NULL) {
+		fprintf(stderr, "Memory allocation failure line %d\n",
+			__LINE__);
+		abort();
+	}
+	info->wildcard = strdup(namebuf);
+
 	info->prefix = prefix;
 
 	broadcast = calc_broadcast(ip, prefix);
@@ -775,7 +789,7 @@ char *expand_ipv6(struct in6_addr *ip6)
 int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 		  unsigned flags)
 {
-	struct in6_addr ip6, mask, network;
+	struct in6_addr ip6, mask, network, wildcard;
 	char errBuf[250];
 	unsigned i;
 
@@ -819,6 +833,19 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 				prefix);
 		return -1;
 	}
+
+	/* calculate wildcard */
+	for (i = 0; i < sizeof(struct in6_addr); i++)
+		wildcard.s6_addr[i] = ~mask.s6_addr[i];
+
+	if (inet_ntop(AF_INET6, &wildcard, errBuf, sizeof(errBuf)) == 0) {
+		if (!beSilent)
+			fprintf(stderr,
+				"ipcalc: error calculating the IPv6 network\n");
+		return -1;
+	}
+
+	info->wildcard = strdup(errBuf);
 
 	for (i = 0; i < sizeof(struct in6_addr); i++)
 		network.s6_addr[i] = ip6.s6_addr[i] & mask.s6_addr[i];
@@ -977,6 +1004,7 @@ int main(int argc, const char **argv)
 	int showHostMax = 0, showHostMin = 0, showHosts = 0;
 	int doCheck = 0, familyIPv6 = 0, doInfo = 0;
 	int rc, familyIPv4 = 0, doRandom = 0, showGeoIP = 0;
+	int showWildcard = 0;
 	int doVersion = 0;
 	poptContext optCon;
 	char *ipStr, *prefixStr = NULL, *netmaskStr = NULL, *chptr;
@@ -1005,7 +1033,9 @@ int main(int argc, const char **argv)
 		 "Show Geographic information about the provided IP"},
 #endif
 		{"netmask", 'm', 0, &showNetmask, 0,
-		 "Display netmask for IP"},
+		 "Display the netmask for IP"},
+		{"wildcard", '\0', 0, &showWildcard, 0,
+		 "Display the wildcard for IP"},
 		{"network", 'n', 0, &showNetwork, 0,
 		 "Display network address",},
 		{"prefix", 'p', 0, &showPrefix, 0,
@@ -1163,7 +1193,7 @@ int main(int argc, const char **argv)
 	/* if no option is given, print information on IP */
 	if (!(showNetmask | showPrefix | showBroadcast | showNetwork |
 	      showHostMin | showHostMax | showHostname | doInfo |
-	      showHosts | showGeoIP | showAddrSpace)) {
+	      showHosts | showGeoIP | showAddrSpace | showWildcard)) {
 		doInfo = 1;
 	}
 
@@ -1196,6 +1226,7 @@ int main(int argc, const char **argv)
 				printf("Address class:\t%s\n", info.class);
 			printf("Netmask:\t%s = %u\n", info.netmask,
 			       info.prefix);
+			printf("Wildcard:\t%s\n", info.wildcard);
 
 			if (info.broadcast)
 				printf("Broadcast:\t%s\n", info.broadcast);
@@ -1215,7 +1246,6 @@ int main(int argc, const char **argv)
 				printf("Address space:\t%s\n", info.type);
 			if (info.class)
 				printf("Address class:\t%s\n", info.class);
-
 		}
 
 		if (info.geoip_country || info.geoip_city || info.geoip_coord) {
@@ -1232,6 +1262,10 @@ int main(int argc, const char **argv)
 
 		if (showNetmask) {
 			printf("NETMASK=%s\n", info.netmask);
+		}
+
+		if (showWildcard) {
+			printf("WILDCARD=%s\n", info.wildcard);
 		}
 
 		if (showPrefix) {
