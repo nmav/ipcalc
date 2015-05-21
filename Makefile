@@ -4,7 +4,7 @@ USE_DYN_GEOIP?=yes
 LIBPATH?=/usr/lib64
 #LIBPATH=/usr/lib/x86_64-linux-gnu
 
-VERSION=0.1.0
+VERSION=0.1.2
 CC?=gcc
 CFLAGS?=-O2 -g -Wall
 LDFLAGS=-lpopt
