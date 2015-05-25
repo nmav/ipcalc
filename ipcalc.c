@@ -1258,24 +1258,39 @@ int main(int argc, const char **argv)
 		}
 
 		if (showAddrSpace && info.type) {
-			printf("ADDRSPACE=\"%s\"\n", info.type);
+			if (strchr(info.type, ' ') != NULL)
+				printf("ADDRSPACE=\"%s\"\n", info.type);
+			else
+				printf("ADDRSPACE=%s\n", info.type);
 		}
 
-		if (showHosts) {
-			printf("ADDRESSES=\"%s\"\n", info.hosts);
+		if (showHosts && info.hosts) {
+			if (strchr(info.hosts, ' ') != NULL)
+				printf("ADDRESSES=\"%s\"\n", info.hosts);
+			else
+				printf("ADDRESSES=%s\n", info.hosts);
 		}
 
-		if (showHostname) {
+		if (showHostname && info.hostname) {
 			printf("HOSTNAME=%s\n", info.hostname);
 		}
 
 		if (showGeoIP) {
 			if (info.geoip_ccode)
 				printf("COUNTRYCODE=%s\n", info.geoip_ccode);
-			if (info.geoip_country)
-				printf("COUNTRY=\"%s\"\n", info.geoip_country);
-			if (info.geoip_city)
-				printf("CITY=\"%s\"\n", info.geoip_city);
+			if (info.geoip_country) {
+				if (strchr(info.geoip_country, ' ') != NULL)
+					printf("COUNTRY=\"%s\"\n", info.geoip_country);
+				else
+					printf("COUNTRY=%s\n", info.geoip_country);
+			}
+			if (info.geoip_city) {
+				if (strchr(info.geoip_city, ' ') != NULL) {
+					printf("CITY=\"%s\"\n", info.geoip_city);
+				} else {
+					printf("CITY=%s\n", info.geoip_city);
+				}
+			}
 			if (info.geoip_coord)
 				printf("COORDINATES=\"%s\"\n", info.geoip_coord);
 		}
