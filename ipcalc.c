@@ -150,8 +150,7 @@ struct in_addr calc_network(struct in_addr addr, int prefix)
   should either be a pointer to a struct in_addr or a struct in6_addr.
 
   \return a hostname, or NULL if one cannot be determined.  Hostname is stored
-  in a static buffer that may disappear at any time, the caller should copy the
-  data if it needs permanent storage.
+  in an allocated buffer.
 */
 char *get_hostname(int family, void *addr)
 {
@@ -175,7 +174,7 @@ char *get_hostname(int family, void *addr)
 	if (ret != 0)
 		return NULL;
 
-	return hostname;
+	return strdup(hostname);
 }
 
 /*!
@@ -186,8 +185,7 @@ char *get_hostname(int family, void *addr)
   \param host a hostname
 
   \return an IP address, or NULL if one cannot be determined.  The IP is stored
-  in a static buffer that may disappear at any time, the caller should copy the
-  data if it needs permanent storage.
+  in an allocated buffer.
 */
 char *get_ip_address(int family, const char *host)
 {
@@ -212,7 +210,7 @@ char *get_ip_address(int family, const char *host)
 
 		if (inet_ntop(rp->ai_family, addr, ipname, sizeof(ipname)) != NULL) {
 			freeaddrinfo(res);
-			return ipname;
+			return strdup(ipname);
 		}
 	}
 
@@ -691,7 +689,6 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	if (flags & FLAG_RESOLVE_HOST) {
 		info->hostname = get_hostname(AF_INET, &ip);
-
 		if (info->hostname == NULL) {
 			if (!beSilent) {
 				sprintf(errBuf,
