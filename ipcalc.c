@@ -181,6 +181,48 @@ char *get_hostname(int family, void *addr)
 	return hostinfo->h_name;
 }
 
+/*!
+  \fn const char *get_ip_address(int family, void *addr)
+  \brief returns the IP address associated with the specified hostname
+
+  \param family the requested address family or AF_UNSPEC for any
+  \param host a hostname
+
+  \return an IP address, or NULL if one cannot be determined.  The IP is stored
+  in a static buffer that may disappear at any time, the caller should copy the
+  data if it needs permanent storage.
+*/
+char *get_ip_address(int family, const char *host)
+{
+	struct addrinfo *res, *rp;
+	struct addrinfo hints;
+	int err;
+	static char ipname[64];
+	void *addr;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = family;
+
+	err = getaddrinfo(host, NULL, &hints, &res);
+	if (err != 0)
+		return NULL;
+
+	for (rp=res;rp!=NULL;rp=rp->ai_next) {
+		if (rp->ai_family == AF_INET)
+			addr = (&((struct sockaddr_in *)(rp->ai_addr))->sin_addr);
+		else
+			addr = (&((struct sockaddr_in6 *)(rp->ai_addr))->sin6_addr);
+
+		if (inet_ntop(rp->ai_family, addr, ipname, sizeof(ipname)) != NULL) {
+			freeaddrinfo(res);
+			return ipname;
+		}
+	}
+
+	freeaddrinfo(res);
+	return NULL;
+}
+
 int bit_count(uint32_t i)
 {
 	int c = 0;
@@ -513,8 +555,8 @@ unsigned default_ipv4_prefix(struct in_addr net)
 	return 24;
 }
 
-#define FLAG_HOSTNAME 1
-#define FLAG_GEOIP 1<<1
+#define FLAG_RESOLVE_HOST 1
+#define FLAG_GEOIP (1<<1)
 
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		  unsigned flags)
@@ -650,7 +692,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	if (flags & FLAG_GEOIP)
 		geo_ipv4_lookup(ip, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
 
-	if (flags & FLAG_HOSTNAME) {
+	if (flags & FLAG_RESOLVE_HOST) {
 		info->hostname = get_hostname(AF_INET, &ip);
 
 		if (info->hostname == NULL) {
@@ -859,7 +901,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	if (flags & FLAG_GEOIP)
 		geo_ipv6_lookup(&ip6, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
 
-	if (flags & FLAG_HOSTNAME) {
+	if (flags & FLAG_RESOLVE_HOST) {
 		info->hostname = get_hostname(AF_INET6, &ip6);
 		if (info->hostname == NULL) {
 			if (!beSilent) {
@@ -974,7 +1016,8 @@ int str_to_prefix(int ipv6, const char *prefixStr)
 int main(int argc, const char **argv)
 {
 	int showBroadcast = 0, showPrefix = 0, showNetwork = 0;
-	int showHostname = 0, showNetmask = 0, showAddrSpace = 0;
+	int resolveHost = 0, showNetmask = 0, showAddrSpace = 0;
+	int resolveIP = 0;
 	int showHostMax = 0, showHostMin = 0, showHosts = 0;
 	int doCheck = 0, familyIPv6 = 0, doInfo = 0;
 	int rc, familyIPv4 = 0, doRandom = 0, showGeoIP = 0;
@@ -999,8 +1042,10 @@ int main(int argc, const char **argv)
 		 "Explicitly specify the IPv6 address family",},
 		{"broadcast", 'b', 0, &showBroadcast, 0,
 		 "Display calculated broadcast address",},
-		{"hostname", 'h', 0, &showHostname, 0,
+		{"hostname", 'h', 0, &resolveHost, 0,
 		 "Show hostname determined via DNS"},
+		{"lookup-host", 'o', 0, &resolveIP, 0,
+		 "Show IP as determined via DNS"},
 #ifdef USE_GEOIP
 		{"geoinfo", 'g', 0, &showGeoIP, 0,
 		 "Show Geographic information about the provided IP"},
@@ -1051,16 +1096,43 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
+	if ((resolveIP && resolveHost) || (resolveIP && doRandom) || (resolveHost && doRandom)) {
+		if (!beSilent)
+			fprintf(stderr,
+				"ipcalc: you cannot specify these options\n");
+		return 1;
+	}
+
 	if (!(ipStr = (char *)poptGetArg(optCon))) {
 		if (!beSilent) {
 			if (doRandom)
 				fprintf(stderr,
 					"ipcalc: network prefix expected\n");
+			else if (resolveIP)
+				fprintf(stderr,
+					"ipcalc: hostname expected\n");
 			else
 				fprintf(stderr,
 					"ipcalc: ip address expected\n");
 		}
 		return 1;
+	}
+
+	if (resolveIP && ipStr) {
+		const char *prev = ipStr;
+		int family = AF_UNSPEC;
+		if (familyIPv6)
+			family = AF_INET6;
+		else if (familyIPv4)
+			family = AF_INET;
+
+		ipStr = get_ip_address(family, prev);
+		if (ipStr == NULL) {
+			if (!beSilent)
+				fprintf(stderr,
+					"ipcalc: could not resolve %s\n", prev);
+			return 1;
+		}
 	}
 
 	if (doRandom) {
@@ -1084,9 +1156,8 @@ int main(int argc, const char **argv)
 
 	if (showGeoIP)
 		flags |= FLAG_GEOIP;
-	if (showHostname)
-		flags |= FLAG_HOSTNAME;
-
+	if (resolveHost)
+		flags |= FLAG_RESOLVE_HOST;
 
 	/* if there is a : in the address, it is an IPv6 address.
 	 * Note that we allow -4, and -6 to be given explicitly, so
@@ -1162,8 +1233,8 @@ int main(int argc, const char **argv)
 
 	/* if no option is given, print information on IP */
 	if (!(showNetmask | showPrefix | showBroadcast | showNetwork |
-	      showHostMin | showHostMax | showHostname | doInfo |
-	      showHosts | showGeoIP | showAddrSpace)) {
+	      showHostMin | showHostMax | resolveHost | doInfo |
+	      showHosts | showGeoIP | showAddrSpace | resolveIP)) {
 		doInfo = 1;
 	}
 
@@ -1270,8 +1341,12 @@ int main(int argc, const char **argv)
 				printf("ADDRESSES=%s\n", info.hosts);
 		}
 
-		if (showHostname && info.hostname) {
+		if (resolveHost && info.hostname) {
 			printf("HOSTNAME=%s\n", info.hostname);
+		}
+
+		if (resolveIP && ipStr) {
+			printf("ADDRESS=%s\n", ipStr);
 		}
 
 		if (showGeoIP) {
