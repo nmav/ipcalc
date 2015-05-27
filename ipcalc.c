@@ -551,7 +551,18 @@ unsigned default_ipv4_prefix(struct in_addr net)
 }
 
 #define FLAG_RESOLVE_HOST 1
-#define FLAG_GEOIP (1<<1)
+#define FLAG_SHOW_GEOIP (1<<1)
+#define FLAG_CHECK_ADDRESS (1<<2)
+#define FLAG_SHOW_INFO (1<<3)
+#define FLAG_SHOW_BROADCAST (1<<6)
+#define FLAG_SHOW_NETMASK (1<<7)
+#define FLAG_SHOW_NETWORK (1<<8)
+#define FLAG_SHOW_PREFIX (1<<9)
+#define FLAG_SHOW_MINADDR (1<<10)
+#define FLAG_SHOW_MAXADDR (1<<11)
+#define FLAG_SHOW_ADDRESSES (1<<12)
+#define FLAG_SHOW_ADDRSPACE (1<<13)
+#define FLAG_RESOLVE_IP (1<<14)
 
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		  unsigned flags)
@@ -684,7 +695,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		snprintf(info->hosts, sizeof(info->hosts), "%u", hosts);
 	}
 
-	if (flags & FLAG_GEOIP)
+	if (flags & FLAG_SHOW_GEOIP)
 		geo_ipv4_lookup(ip, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
 
 	if (flags & FLAG_RESOLVE_HOST) {
@@ -892,7 +903,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	snprintf(info->hosts, sizeof(info->hosts), "%s", p2_table(128 - prefix));
 
-	if (flags & FLAG_GEOIP)
+	if (flags & FLAG_SHOW_GEOIP)
 		geo_ipv6_lookup(&ip6, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
 
 	if (flags & FLAG_RESOLVE_HOST) {
@@ -1009,12 +1020,11 @@ int str_to_prefix(int ipv6, const char *prefixStr)
 */
 int main(int argc, const char **argv)
 {
-	int showBroadcast = 0, showPrefix = 0, showNetwork = 0;
-	int resolveHost = 0, showNetmask = 0, showAddrSpace = 0;
-	int resolveIP = 0;
-	int showHostMax = 0, showHostMin = 0, showHosts = 0;
-	int doCheck = 0, familyIPv6 = 0, doInfo = 0;
-	int rc, familyIPv4 = 0, doRandom = 0, showGeoIP = 0;
+	int doCheck = 0;
+	int familyIPv4 = 0, familyIPv6 = 0;
+	int rc;
+	char *randomStr = NULL;
+	char *hostname = NULL;
 	int doVersion = 0;
 	poptContext optCon;
 	char *ipStr, *prefixStr = NULL, *netmaskStr = NULL, *chptr;
@@ -1024,39 +1034,39 @@ int main(int argc, const char **argv)
 	int r = 0;
 
 	struct poptOption optionsTable[] = {
-		{"check", 'c', 0, &doCheck, 0,
+		{"check", 'c', POPT_BIT_SET, &flags, FLAG_CHECK_ADDRESS,
 		 "Validate IP address",},
-		{"random-private", 'r', 0, &doRandom, 0,
+		{"random-private", 'r', POPT_ARG_STRING, &randomStr, 0,
 		 "Generate a random private IP network using the provided netmask",},
-		{"info", 'i', 0, &doInfo, 0,
+		{"info", 'i', POPT_BIT_SET, &flags, FLAG_SHOW_INFO,
 		 "Print information on the provided IP address",},
 		{"ipv4", '4', 0, &familyIPv4, 0,
 		 "Explicitly specify the IPv4 address family",},
 		{"ipv6", '6', 0, &familyIPv6, 0,
 		 "Explicitly specify the IPv6 address family",},
-		{"broadcast", 'b', 0, &showBroadcast, 0,
+		{"broadcast", 'b', POPT_BIT_SET, &flags, FLAG_SHOW_BROADCAST,
 		 "Display calculated broadcast address",},
-		{"hostname", 'h', 0, &resolveHost, 0,
+		{"hostname", 'h', POPT_BIT_SET, &flags, FLAG_RESOLVE_HOST,
 		 "Show hostname determined via DNS"},
-		{"lookup-host", 'o', 0, &resolveIP, 0,
+		{"lookup-host", 'o', POPT_ARG_STRING, &hostname, 0,
 		 "Show IP as determined via DNS"},
 #ifdef USE_GEOIP
-		{"geoinfo", 'g', 0, &showGeoIP, 0,
+		{"geoinfo", 'g', POPT_BIT_SET, &flags, FLAG_SHOW_GEOIP,
 		 "Show Geographic information about the provided IP"},
 #endif
-		{"netmask", 'm', 0, &showNetmask, 0,
+		{"netmask", 'm', POPT_BIT_SET, &flags, FLAG_SHOW_NETMASK,
 		 "Display netmask for IP"},
-		{"network", 'n', 0, &showNetwork, 0,
+		{"network", 'n', POPT_BIT_SET, &flags, FLAG_SHOW_NETWORK,
 		 "Display network address",},
-		{"prefix", 'p', 0, &showPrefix, 0,
+		{"prefix", 'p', POPT_BIT_SET, &flags, FLAG_SHOW_PREFIX,
 		 "Display network prefix",},
-		{"minaddr", '\0', 0, &showHostMin, 0,
+		{"minaddr", '\0', POPT_BIT_SET, &flags, FLAG_SHOW_MINADDR,
 		 "Display the minimum address in the network",},
-		{"maxaddr", '\0', 0, &showHostMax, 0,
+		{"maxaddr", '\0', POPT_BIT_SET, &flags, FLAG_SHOW_MAXADDR,
 		 "Display the maximum address in the network",},
-		{"addresses", '\0', 0, &showHosts, 0,
+		{"addresses", '\0', POPT_BIT_SET, &flags, FLAG_SHOW_ADDRESSES,
 		 "Display the maximum number of addresses in the network",},
-		{"addrspace", '\0', 0, &showAddrSpace, 0,
+		{"addrspace", '\0', POPT_BIT_SET, &flags, FLAG_SHOW_ADDRSPACE,
 		 "Display the address space the network resides on",},
 		{"silent", 's', 0, &beSilent, 0,
 		 "Don't ever display error messages"},
@@ -1090,51 +1100,45 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	if ((resolveIP && resolveHost) || (resolveIP && doRandom) || (resolveHost && doRandom)) {
+	if (hostname)
+		flags |= FLAG_RESOLVE_IP;
+
+	if (hostname && randomStr) {
 		if (!beSilent)
 			fprintf(stderr,
-				"ipcalc: you cannot specify these options\n");
+				"ipcalc: you cannot mix these options\n");
 		return 1;
 	}
 
-	if (!(ipStr = (char *)poptGetArg(optCon))) {
+	if (hostname == NULL && randomStr == NULL && !(ipStr = (char *)poptGetArg(optCon))) {
 		if (!beSilent) {
-			if (doRandom)
-				fprintf(stderr,
-					"ipcalc: network prefix expected\n");
-			else if (resolveIP)
-				fprintf(stderr,
-					"ipcalc: hostname expected\n");
-			else
-				fprintf(stderr,
-					"ipcalc: ip address expected\n");
+			fprintf(stderr,
+				"ipcalc: ip address expected\n");
 		}
 		return 1;
 	}
 
-	if (resolveIP && ipStr) {
-		const char *prev = ipStr;
+	/* resolve IP address if a hostname was given */
+	if (hostname) {
 		int family = AF_UNSPEC;
 		if (familyIPv6)
 			family = AF_INET6;
 		else if (familyIPv4)
 			family = AF_INET;
 
-		ipStr = get_ip_address(family, prev);
+		ipStr = get_ip_address(family, hostname);
 		if (ipStr == NULL) {
 			if (!beSilent)
 				fprintf(stderr,
-					"ipcalc: could not resolve %s\n", prev);
+					"ipcalc: could not resolve %s\n", hostname);
 			return 1;
 		}
-	}
-
-	if (doRandom) {
-		prefix = str_to_prefix(familyIPv6, ipStr);
+	} else if (randomStr) { /* generate a random private network if asked */
+		prefix = str_to_prefix(familyIPv6, randomStr);
 		if (prefix < 0) {
 			if (!beSilent)
 				fprintf(stderr,
-					"ipcalc: bad prefix: %s\n", ipStr);
+					"ipcalc: bad prefix: %s\n", randomStr);
 			return 1;
 		}
 
@@ -1147,11 +1151,6 @@ int main(int argc, const char **argv)
 			return 1;
 		}
 	}
-
-	if (showGeoIP)
-		flags |= FLAG_GEOIP;
-	if (resolveHost)
-		flags |= FLAG_RESOLVE_HOST;
 
 	/* if there is a : in the address, it is an IPv6 address.
 	 * Note that we allow -4, and -6 to be given explicitly, so
@@ -1194,7 +1193,7 @@ int main(int argc, const char **argv)
 	if (familyIPv6) {
 		r = get_ipv6_info(ipStr, prefix, &info, flags);
 	} else {
-		if (showBroadcast || showNetwork || showPrefix) {
+		if ((flags & FLAG_SHOW_BROADCAST) || (flags & FLAG_SHOW_NETWORK) || (flags & FLAG_SHOW_PREFIX)) {
 			if (netmaskStr && prefix >= 0) {
 				if (!beSilent) {
 					fprintf(stderr,
@@ -1226,16 +1225,14 @@ int main(int argc, const char **argv)
 		return 0;
 
 	/* if no option is given, print information on IP */
-	if (!(showNetmask | showPrefix | showBroadcast | showNetwork |
-	      showHostMin | showHostMax | resolveHost | doInfo |
-	      showHosts | showGeoIP | showAddrSpace | resolveIP)) {
-		doInfo = 1;
+	if (!flags) {
+		flags |= FLAG_SHOW_INFO;
 	}
 
 	poptFreeContext(optCon);
 
 	/* we know what we want to display now, so display it. */
-	if (doInfo) {
+	if (flags & FLAG_SHOW_INFO) {
 		unsigned single_host = 0;
 
 		if ((familyIPv6 && info.prefix == 128) ||
@@ -1243,7 +1240,7 @@ int main(int argc, const char **argv)
 			single_host = 1;
 		}
 
-		if ((!doRandom || single_host) &&
+		if ((!randomStr || single_host) &&
 		    (single_host || strcmp(info.network, info.ip) != 0)) {
 			if (info.expanded_ip)
 				printf("Full Address:\t%s\n", info.expanded_ip);
@@ -1297,53 +1294,53 @@ int main(int argc, const char **argv)
 
 	} else {
 
-		if (showNetmask) {
+		if (flags & FLAG_SHOW_NETMASK) {
 			printf("NETMASK=%s\n", info.netmask);
 		}
 
-		if (showPrefix) {
+		if (flags & FLAG_SHOW_PREFIX) {
 			printf("PREFIX=%u\n", info.prefix);
 		}
 
-		if (showBroadcast && !familyIPv6) {
+		if ((flags & FLAG_SHOW_BROADCAST) && !familyIPv6) {
 			printf("BROADCAST=%s\n", info.broadcast);
 		}
 
-		if (showNetwork) {
+		if (flags & FLAG_SHOW_NETWORK) {
 			printf("NETWORK=%s\n", info.network);
 		}
 
-		if (showHostMin && info.hostmin) {
+		if ((flags & FLAG_SHOW_MINADDR) && info.hostmin) {
 			printf("MINADDR=%s\n", info.hostmin);
 		}
 
-		if (showHostMax && info.hostmax) {
+		if ((flags & FLAG_SHOW_MAXADDR) && info.hostmax) {
 			printf("MAXADDR=%s\n", info.hostmax);
 		}
 
-		if (showAddrSpace && info.type) {
+		if ((flags & FLAG_SHOW_ADDRSPACE) && info.type) {
 			if (strchr(info.type, ' ') != NULL)
 				printf("ADDRSPACE=\"%s\"\n", info.type);
 			else
 				printf("ADDRSPACE=%s\n", info.type);
 		}
 
-		if (showHosts && info.hosts) {
+		if ((flags & FLAG_SHOW_ADDRESSES) && info.hosts) {
 			if (strchr(info.hosts, ' ') != NULL)
 				printf("ADDRESSES=\"%s\"\n", info.hosts);
 			else
 				printf("ADDRESSES=%s\n", info.hosts);
 		}
 
-		if (resolveHost && info.hostname) {
+		if ((flags & FLAG_RESOLVE_HOST) && info.hostname) {
 			printf("HOSTNAME=%s\n", info.hostname);
 		}
 
-		if (resolveIP && ipStr) {
+		if (flags & FLAG_RESOLVE_IP) {
 			printf("ADDRESS=%s\n", ipStr);
 		}
 
-		if (showGeoIP) {
+		if (flags & FLAG_SHOW_GEOIP) {
 			if (info.geoip_ccode)
 				printf("COUNTRYCODE=%s\n", info.geoip_ccode);
 			if (info.geoip_country) {
