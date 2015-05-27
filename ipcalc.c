@@ -1059,7 +1059,6 @@ int main(int argc, const char **argv)
 			else
 				fprintf(stderr,
 					"ipcalc: ip address expected\n");
-			poptPrintHelp(optCon, stderr, 0);
 		}
 		return 1;
 	}
