@@ -155,30 +155,27 @@ struct in_addr calc_network(struct in_addr addr, int prefix)
 */
 char *get_hostname(int family, void *addr)
 {
-	struct hostent *hostinfo = NULL;
-	int x;
-	struct in_addr addr4;
-	struct in6_addr addr6;
+	static char hostname[NI_MAXHOST];
+	int ret = -1;
+	struct sockaddr_in addr4;
+	struct sockaddr_in6 addr6;
 
 	if (family == AF_INET) {
 		memset(&addr4, 0, sizeof(addr4));
-		memcpy(&addr4, addr, sizeof(addr4));
-		hostinfo = gethostbyaddr((const void *)&addr4,
-					 sizeof(addr4), family);
+		addr4.sin_family = AF_INET;
+		memcpy(&addr4.sin_addr, addr, sizeof(struct in_addr));
+		ret = getnameinfo((struct sockaddr*)&addr4, sizeof(addr4), hostname, sizeof(hostname), NULL, 0, 0);
 	} else if (family == AF_INET6) {
 		memset(&addr6, 0, sizeof(addr6));
-		memcpy(&addr6, addr, sizeof(addr6));
-		hostinfo = gethostbyaddr((const void *)&addr6,
-					 sizeof(addr6), family);
+		addr6.sin6_family = AF_INET6;
+		memcpy(&addr6.sin6_addr, addr, sizeof(struct in6_addr));
+		ret = getnameinfo((struct sockaddr*)&addr6, sizeof(addr6), hostname, sizeof(hostname), NULL, 0, 0);
 	}
 
-	if (!hostinfo)
+	if (ret != 0)
 		return NULL;
 
-	for (x = 0; hostinfo->h_name[x]; x++) {
-		hostinfo->h_name[x] = tolower(hostinfo->h_name[x]);
-	}
-	return hostinfo->h_name;
+	return hostname;
 }
 
 /*!
