@@ -1,4 +1,4 @@
-* Version 0.1.2 (unreleased)
+* Version 0.1.2 (released 2015-06-09)
 - Print the country code when --geoinfo is requested.
 - Only quote the strings if there are spaces in them.
 
