@@ -1139,7 +1139,7 @@ int main(int argc, const char **argv)
 		if (prefix < 0) {
 			if (!beSilent)
 				fprintf(stderr,
-					"ipcalc: bad prefix: %s\n", randomStr);
+					"ipcalc: bad %s prefix: %s\n", familyIPv6?"IPv6":"IPv4", randomStr);
 			return 1;
 		}
 
@@ -1186,7 +1186,7 @@ int main(int argc, const char **argv)
 		if (prefix < 0) {
 			if (!beSilent)
 				fprintf(stderr,
-					"ipcalc: bad prefix: %s\n", prefixStr);
+					"ipcalc: bad %s prefix: %s\n", familyIPv6?"IPv6":"IPv4", prefixStr);
 			return 1;
 		}
 	}
@@ -1210,8 +1210,7 @@ int main(int argc, const char **argv)
 			if (prefix < 0) {
 				if (!beSilent)
 					fprintf(stderr,
-						"ipcalc: bad prefix: %s\n",
-						prefixStr);
+						"ipcalc: bad IPv4 prefix: %s\n", prefixStr);
 				return 1;
 			}
 		}
