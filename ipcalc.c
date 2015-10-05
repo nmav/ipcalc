@@ -551,7 +551,7 @@ unsigned default_ipv4_prefix(struct in_addr net)
 }
 
 #define FLAG_RESOLVE_HOST 1
-#define FLAG_SHOW_GEOIP (1<<1)
+#define FLAG_RESOLVE_IP (1<<1)
 #define FLAG_CHECK_ADDRESS (1<<2)
 #define FLAG_SHOW_INFO (1<<3)
 #define FLAG_SHOW_BROADCAST (1<<6)
@@ -562,7 +562,11 @@ unsigned default_ipv4_prefix(struct in_addr net)
 #define FLAG_SHOW_MAXADDR (1<<11)
 #define FLAG_SHOW_ADDRESSES (1<<12)
 #define FLAG_SHOW_ADDRSPACE (1<<13)
-#define FLAG_RESOLVE_IP (1<<14)
+#define FLAG_GET_GEOIP (1<<14)
+#define FLAG_SHOW_GEOIP (1<<15|FLAG_GET_GEOIP)
+
+#define FLAGS_TO_IGNORE (FLAG_GET_GEOIP)
+#define FLAGS_TO_IGNORE_MASK (~FLAGS_TO_IGNORE)
 
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		  unsigned flags)
@@ -695,7 +699,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		snprintf(info->hosts, sizeof(info->hosts), "%u", hosts);
 	}
 
-	if (flags & FLAG_SHOW_GEOIP)
+	if (flags & FLAG_GET_GEOIP)
 		geo_ipv4_lookup(ip, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
 
 	if (flags & FLAG_RESOLVE_HOST) {
@@ -903,7 +907,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	snprintf(info->hosts, sizeof(info->hosts), "%s", p2_table(128 - prefix));
 
-	if (flags & FLAG_SHOW_GEOIP)
+	if (flags & FLAG_GET_GEOIP)
 		geo_ipv6_lookup(&ip6, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
 
 	if (flags & FLAG_RESOLVE_HOST) {
@@ -1103,6 +1107,9 @@ int main(int argc, const char **argv)
 	if (hostname)
 		flags |= FLAG_RESOLVE_IP;
 
+	if (geo_setup() == 0)
+		flags |= FLAG_GET_GEOIP;
+
 	if (hostname && randomStr) {
 		if (!beSilent)
 			fprintf(stderr,
@@ -1225,7 +1232,7 @@ int main(int argc, const char **argv)
 		return 0;
 
 	/* if no option is given, print information on IP */
-	if (!flags) {
+	if (!(flags & FLAGS_TO_IGNORE_MASK)) {
 		flags |= FLAG_SHOW_INFO;
 	}
 
@@ -1340,7 +1347,7 @@ int main(int argc, const char **argv)
 			printf("ADDRESS=%s\n", ipStr);
 		}
 
-		if (flags & FLAG_SHOW_GEOIP) {
+		if ((flags & FLAG_SHOW_GEOIP) == FLAG_SHOW_GEOIP) {
 			if (info.geoip_ccode)
 				printf("COUNTRYCODE=%s\n", info.geoip_ccode);
 			if (info.geoip_country) {

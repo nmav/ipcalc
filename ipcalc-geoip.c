@@ -60,19 +60,27 @@ static GeoIP_record_by_ipnum_v6_func pGeoIP_record_by_ipnum_v6;
 
 #define LIBNAME LIBPATH"/libGeoIP.so.1"
 
-static int setup_geoip(void)
+int geo_setup(void)
 {
-	void *ld;
+	static void *ld = NULL;
+	static int ret = 0;
+	static char err[256] = {0};
+
+	if (ld != NULL || ret != 0) {
+	    	if (!beSilent && err[0] != 0) {
+	    		fprintf(stderr, "%s", err);
+		}
+		return ret;
+	}
 
 	ld = dlopen(LIBNAME, RTLD_LAZY);
 	if (ld == NULL) {
-	    	if (beSilent == 0)
-		    	fprintf(stderr, "ipcalc: could not open %s\n", LIBNAME);
-		return -1;
+		snprintf(err, sizeof(err), "ipcalc: could not open %s\n", LIBNAME);
+		ret = -1;
+		goto exit;
 	}
 
 	p_GeoIP_setup_dbfilename = dlsym(ld, "_GeoIP_setup_dbfilename");
-
 
 	pGeoIP_open_type = dlsym(ld, "GeoIP_open_type");
 	pGeoIP_country_name_by_id = dlsym(ld, "GeoIP_country_name_by_id");
@@ -87,16 +95,17 @@ static int setup_geoip(void)
 	    pGeoIP_delete == NULL || pGeoIP_record_by_ipnum == NULL ||
 	    pGeoIP_id_by_ipnum == NULL || pGeoIP_id_by_ipnum_v6 == NULL ||
 	    pGeoIP_record_by_ipnum_v6 == NULL) {
-	    	if (beSilent == 0)
-		    	fprintf(stderr, "ipcalc: could not find symbols in libGeoIP\n");
-	    	return -1;
+		snprintf(err, sizeof(err), "ipcalc: could not find symbols in libGeoIP\n");
+	    	ret = -1;
+	    	goto exit;
 	}
-	return 0;
+
+	ret = 0;
+ exit:
+	return ret;
 }
 
 # else
-
-#  define setup_geoip() 0
 
 extern void _GeoIP_setup_dbfilename(void);
 #  define p_GeoIP_setup_dbfilename _GeoIP_setup_dbfilename
@@ -117,7 +126,7 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **cit
 	int country_id;
 	const char *p;
 
-	if (setup_geoip() != 0)
+	if (geo_setup() != 0)
 		return;
 
 	ip.s_addr = ntohl(ip.s_addr);
@@ -183,7 +192,7 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **c
 	int country_id;
 	const char *p;
 
-	if (setup_geoip() != 0)
+	if (geo_setup() != 0)
 		return;
 
 	p_GeoIP_setup_dbfilename();
