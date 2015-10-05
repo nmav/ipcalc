@@ -25,6 +25,9 @@ Broadcast:	193.92.150.255
 HostMin:	193.92.150.1
 HostMax:	193.92.150.254
 Hosts/Net:	254
+
+Country code:	GR
+Country:	Greece
 ```
 
 ```
@@ -54,6 +57,9 @@ Netmask:	ffff:ffff:ffff:ffff:: = 64
 HostMin:	2a03:2880:20:4f06::
 HostMax:	2a03:2880:20:4f06:ffff:ffff:ffff:ffff
 Hosts/Net:	2^(64) = 18446744073709551616
+
+Country code:	IE
+Country:	Ireland
 ```
 
 ```
