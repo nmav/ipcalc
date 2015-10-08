@@ -1294,7 +1294,7 @@ int main(int argc, const char **argv)
 			if (info.geoip_country)
 				printf("Country:\t%s\n", info.geoip_country);
 			if (info.geoip_city)
-				printf("City:\t%s\n", info.geoip_city);
+				printf("City:\t\t%s\n", info.geoip_city);
 			if (info.geoip_coord)
 				printf("Coordinates:\t%s\n", info.geoip_coord);
 		}
