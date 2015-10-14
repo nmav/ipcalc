@@ -1,16 +1,26 @@
-.TH IPCALC 1 "May 27 2015" "Red Hat, Inc." \" -*- nroff -*-
+.TH IPCALC 1 "Oct 1 2015" "Red Hat, Inc." \" -*- nroff -*-
 .SH NAME
-ipcalc \- perform simple manipulation of IP addresses
+ipcalc \- perform simple operations on IP addresses and networks
 .SH SYNOPSIS
 .B ipcalc
 [\fIOPTION\fR]... <\fBIP address\fR>[\fI/prefix\fR] [\fInetmask\fR]
 
 .SH DESCRIPTION
 \fBipcalc\fR provides a simple way to calculate IP information for a host
-or network. The various options specify what information \fBipcalc\fR should display
+or network. Depending on the options specified, it may be used to provide
+IP network information in human readable format, in a format suitable for
+parsing in scripts, generate random private addresses, resolve an IP address,
+or check the validity of an address.
+
+By default or when the \fB\-\-info\fR or \fB\-\-all\-info\fR parameters
+are specified the information provided is human readable. Otherwise,
+when specific options are given (e.g., \fB\-\-prefix\fR) the output is
+in the VAR=VALUE format.
+
+The various options specify what information \fBipcalc\fR should display
 on standard out. Multiple options may be specified.  An IP address to
-operate on must always be specified.  Most operations also require a
-netmask or a CIDR prefix as well.
+operate on must always be specified, and several operations also require
+a netmask or a CIDR prefix as well.
 
 .SH OPTIONS
 .TP
@@ -19,8 +29,30 @@ netmask or a CIDR prefix as well.
 Validate the IP address under the specified family. 
 
 .TP
+\fB\-i\fR, \fB\-\-info\fR 
+Display generic information on the provided network in human readable format (default).
+
+.TP
+\fB\-\-all\-info\fR 
+Display verbose information on the provided network and addresses in human
+readable format. That includes GeoIP information.
+
+.TP
 \fB\-r\fR, \fB\-\-random-private\fR
-Generate a random private address using the supplied prefix.
+Generate a random private address using the supplied prefix or mask. By default
+it displays output in human readable format, but may be combined with 
+other options (e.g., \fB\-\-network\fR) to display specific information in
+VAR=VALUE format.
+
+.TP
+\fB\-h\fR, \fB\-\-hostname\fR
+Display the hostname for the given IP address.
+The variable exposed is HOSTNAME.
+
+.TP
+\fB\-h\fR, \fB\-\-lookup-host\fR
+Display the IP address for the given hostname.
+The variable exposed is ADDRESS.
 
 .TP
 \fB\-4\fR, \fB\-\-ipv4\fR
@@ -34,16 +66,6 @@ Explicitly specify the IPv6 address family.
 \fB\-b\fR, \fB\-\-broadcast\fR
 Display the broadcast address for the given IP address and netmask.
 The variable exposed is BROADCAST (if available).
-
-.TP
-\fB\-h\fR, \fB\-\-hostname\fR
-Display the hostname for the given IP address.
-The variable exposed is HOSTNAME.
-
-.TP
-\fB\-h\fR, \fB\-\-lookup-host\fR
-Display the IP address for the given hostname.
-The variable exposed is ADDRESS.
 
 .TP
 \fB\-g\fR, \fB\-\-geoinfo\fR
@@ -88,15 +110,6 @@ The variable exposed is ADDRESSES.
 \fB\   \fR \fB\-\-addrspace\fR 
 Display address space allocation information for the provided network.
 The variable exposed is ADDRSPACE.
-
-.TP
-\fB\-i\fR, \fB\-\-info\fR 
-Display generic information on the provided network (default).
-
-.TP
-\fB\-\-all\-info\fR 
-Display verbose information on the provided network and addresses. That
-includes GeoIP information.
 
 .TP
 \fB\-s\fR, \fB\-\-silent\fR 
