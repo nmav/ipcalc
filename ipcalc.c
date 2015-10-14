@@ -1110,7 +1110,7 @@ int main(int argc, const char **argv)
 	if (hostname)
 		flags |= FLAG_RESOLVE_IP;
 
-	if (geo_setup() == 0 && (flags & FLAG_SHOW_ALL_INFO))
+	if (geo_setup() == 0 && ((flags & FLAG_SHOW_ALL_INFO) == FLAG_SHOW_ALL_INFO))
 		flags |= FLAG_GET_GEOIP;
 
 	if (hostname && randomStr) {
