@@ -1,3 +1,8 @@
+* Version 0.1.4 (unreleased)
+- Added the --all-info option to enable the printing of all
+  available information.
+
+
 * Version 0.1.3 (released 2015-10-05)
 - Print the country code in informational mode.
 

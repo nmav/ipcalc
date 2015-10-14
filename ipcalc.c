@@ -563,9 +563,10 @@ unsigned default_ipv4_prefix(struct in_addr net)
 #define FLAG_SHOW_ADDRESSES (1<<12)
 #define FLAG_SHOW_ADDRSPACE (1<<13)
 #define FLAG_GET_GEOIP (1<<14)
-#define FLAG_SHOW_GEOIP (1<<15|FLAG_GET_GEOIP)
+#define FLAG_SHOW_GEOIP ((1<<15)|FLAG_GET_GEOIP)
+#define FLAG_SHOW_ALL_INFO ((1<<16)|FLAG_SHOW_INFO)
 
-#define FLAGS_TO_IGNORE (FLAG_GET_GEOIP)
+#define FLAGS_TO_IGNORE (FLAG_GET_GEOIP|(1<<16))
 #define FLAGS_TO_IGNORE_MASK (~FLAGS_TO_IGNORE)
 
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
@@ -1044,6 +1045,8 @@ int main(int argc, const char **argv)
 		 "Generate a random private IP network using the provided netmask",},
 		{"info", 'i', POPT_BIT_SET, &flags, FLAG_SHOW_INFO,
 		 "Print information on the provided IP address",},
+		{"all-info", 0, POPT_BIT_SET, &flags, FLAG_SHOW_ALL_INFO,
+		 "Print verbose information on the provided IP address",},
 		{"ipv4", '4', 0, &familyIPv4, 0,
 		 "Explicitly specify the IPv4 address family",},
 		{"ipv6", '6', 0, &familyIPv6, 0,
@@ -1107,7 +1110,7 @@ int main(int argc, const char **argv)
 	if (hostname)
 		flags |= FLAG_RESOLVE_IP;
 
-	if (geo_setup() == 0)
+	if (geo_setup() == 0 && (flags & FLAG_SHOW_ALL_INFO))
 		flags |= FLAG_GET_GEOIP;
 
 	if (hostname && randomStr) {
