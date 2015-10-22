@@ -996,10 +996,10 @@ static char *generate_ip_network(int ipv6, unsigned prefix)
 }
 
 static
-int str_to_prefix(int ipv6, const char *prefixStr)
+int str_to_prefix(int *ipv6, const char *prefixStr, unsigned fix)
 {
 	int prefix, r;
-	if (!ipv6 && strchr(prefixStr, '.')) {	/* prefix is 255.x.x.x */
+	if (!(*ipv6) && strchr(prefixStr, '.')) {	/* prefix is 255.x.x.x */
 		prefix = ipv4_mask_to_int(prefixStr);
 	} else {
 		r = safe_atoi(prefixStr, &prefix);
@@ -1008,7 +1008,10 @@ int str_to_prefix(int ipv6, const char *prefixStr)
 		}
 	}
 
-	if (prefix < 0 || ((ipv6 && prefix > 128) || (!ipv6 && prefix > 32))) {
+	if (fix && (prefix > 32 && !(*ipv6)))
+		*ipv6 = 1;
+
+	if (prefix < 0 || (((*ipv6) && prefix > 128) || (!(*ipv6) && prefix > 32))) {
 		return -1;
 	}
 	return prefix;
@@ -1145,7 +1148,7 @@ int main(int argc, const char **argv)
 			return 1;
 		}
 	} else if (randomStr) { /* generate a random private network if asked */
-		prefix = str_to_prefix(familyIPv6, randomStr);
+		prefix = str_to_prefix(&familyIPv6, randomStr, 1);
 		if (prefix < 0) {
 			if (!beSilent)
 				fprintf(stderr,
@@ -1192,7 +1195,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (prefixStr != NULL) {
-		prefix = str_to_prefix(familyIPv6, prefixStr);
+		prefix = str_to_prefix(&familyIPv6, prefixStr, 0);
 		if (prefix < 0) {
 			if (!beSilent)
 				fprintf(stderr,
