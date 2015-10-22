@@ -1,3 +1,7 @@
+* Version 0.1.5 (unreleased)
+- Auto-detect IPv6 addresses when generating random networks.
+
+
 * Version 0.1.4 (released 2015-10-14)
 - Added the --all-info option to enable the printing of all
   available information.
