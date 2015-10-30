@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/nmav/ipcalc.svg?branch=master)](https://travis-ci.org/nmav/ipcalc)
+
 Information about this ipcalc
 =============================
 
@@ -14,7 +16,7 @@ Examples
 ## IPv4
 
 ```
-$ ./ipcalc 193.92.150.2/24
+$ ./ipcalc --all-info 193.92.150.2/24
 Address:	193.92.150.2
 Network:	193.92.150.0/24
 Address space:	Internet
@@ -45,8 +47,7 @@ COUNTRY="Greece"
 ## IPv6
 
 ```
-$ ./ipcalc 2a03:2880:20:4f06:face:b00c:0:14/64
-$ ./ipcalc 2a03:2880:20:4f06:face:b00c:0:14/64
+$ ./ipcalc --all-info 2a03:2880:20:4f06:face:b00c:0:14/64
 Full Address:	2a03:2880:0020:4f06:face:b00c:0000:0014
 Address:	2a03:2880:20:4f06:face:b00c:0:14
 Full Network:	2a03:2880:0020:4f06:0000:0000:0000:0000
