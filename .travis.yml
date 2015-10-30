@@ -3,5 +3,9 @@ compiler:
   - clang
   - gcc
 
-script: make && make check
+before_script:
+  - sudo apt-get update -qq
+  - sudo apt-get install libpopt-dev libgeoip-dev
+
+script: USE_GEOIP=no LIBPATH=/usr/lib/x86_64-linux-gnu make && make check
 
