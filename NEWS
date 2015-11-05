@@ -1,5 +1,6 @@
 * Version 0.1.5 (unreleased)
 - Auto-detect IPv6 addresses when generating random networks.
+- Removed libpopt dependency by using getopt_long().
 
 
 * Version 0.1.4 (released 2015-10-14)
