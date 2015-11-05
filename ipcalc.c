@@ -1056,8 +1056,8 @@ void usage(unsigned verbose)
 	if (verbose) {
 		fprintf(stderr, "Usage: ipcalc [OPTION...]\n");
 		fprintf(stderr, "  -c, --check                     Validate IP address\n");
-		fprintf(stderr, "  -r, --random-private=STRING     Generate a random private IP network using\n");
-		fprintf(stderr, "                                  the provided netmask\n");
+		fprintf(stderr, "  -r, --random-private=PREFIX     Generate a random private IP network using\n");
+		fprintf(stderr, "                                  the provided prefix/netmask\n");
 		fprintf(stderr, "  -i, --info                      Print information on the provided IP address\n");
 		fprintf(stderr, "      --all-info                  Print verbose information on the provided IP\n");
 		fprintf(stderr, "                                  address\n");
