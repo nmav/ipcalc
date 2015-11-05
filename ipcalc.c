@@ -14,10 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Authors:
+ *   Nikos Mavrogiannopoulos <nmav@redhat.com>
  *   Erik Troan <ewt@redhat.com>
  *   Preston Brown <pbrown@redhat.com>
  *   David Cantrell <dcantrell@redhat.com>
- *   Nikos Mavrogiannopoulos <nmav@redhat.com>
  */
 
 #define _GNU_SOURCE		/* asprintf */
