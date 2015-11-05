@@ -8,7 +8,7 @@ LIBS?=
 VERSION=0.1.4
 CC?=gcc
 CFLAGS?=-O2 -g -Wall
-LDFLAGS=$(LIBS) -lpopt
+LDFLAGS=$(LIBS)
 
 ifeq ($(USE_GEOIP),yes)
 ifeq ($(USE_DYN_GEOIP),yes)

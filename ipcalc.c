@@ -22,7 +22,7 @@
 
 #define _GNU_SOURCE		/* asprintf */
 #include <ctype.h>
-#include <popt.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1017,6 +1017,84 @@ int str_to_prefix(int *ipv6, const char *prefixStr, unsigned fix)
 	return prefix;
 }
 
+#define OPT_ALLINFO 1
+#define OPT_MINADDR 2
+#define OPT_MAXADDR 3
+#define OPT_ADDRESSES 4
+#define OPT_ADDRSPACE 5
+#define OPT_USAGE 6
+static const struct option long_options[] = {
+	{"check", 0, 0, 'c'},
+	{"random-private", 1, 0, 'r'},
+	{"info", 0, 0, 'i'},
+	{"all-info", 0, 0, OPT_ALLINFO},
+	{"ipv4", 0, 0, '4'},
+	{"ipv6", 0, 0, '6'},
+	{"broadcast", 0, 0, 'b'},
+	{"hostname", 0, 0, 'h'},
+	{"lookup-host", 0, 0, 'o'},
+#ifdef USE_GEOIP
+	{"geoinfo", 0, 0, 'g'},
+#endif
+	{"netmask", 0, 0, 'm'},
+	{"network", 0, 0, 'n'},
+	{"prefix", 0, 0, 'p'},
+	{"minaddr", 0, 0, OPT_MINADDR},
+	{"maxaddr", 0, 0, OPT_MAXADDR},
+	{"addresses", 0, 0, OPT_ADDRESSES},
+	{"addrspace", 0, 0, OPT_ADDRSPACE},
+	{"silent", 0, 0, 's'},
+	{"version", 0, 0, 'v'},
+	{"help", 0, 0, '?'},
+	{"usage", 0, 0, OPT_USAGE},
+	{NULL, 0, 0, 0}
+};
+
+static
+void usage(unsigned verbose)
+{
+	if (verbose) {
+		fprintf(stderr, "Usage: ipcalc [OPTION...]\n");
+		fprintf(stderr, "  -c, --check                     Validate IP address\n");
+		fprintf(stderr, "  -r, --random-private=STRING     Generate a random private IP network using\n");
+		fprintf(stderr, "                                  the provided netmask\n");
+		fprintf(stderr, "  -i, --info                      Print information on the provided IP address\n");
+		fprintf(stderr, "      --all-info                  Print verbose information on the provided IP\n");
+		fprintf(stderr, "                                  address\n");
+		fprintf(stderr, "  -4, --ipv4                      Explicitly specify the IPv4 address family\n");
+		fprintf(stderr, "  -6, --ipv6                      Explicitly specify the IPv6 address family\n");
+		fprintf(stderr, "  -b, --broadcast                 Display calculated broadcast address\n");
+		fprintf(stderr, "  -h, --hostname                  Show hostname determined via DNS\n");
+		fprintf(stderr, "  -o, --lookup-host=STRING        Show IP as determined via DNS\n");
+#ifdef USE_GEOIP
+		fprintf(stderr, "  -g, --geoinfo                   Show Geographic information about the\n");
+#endif
+		fprintf(stderr, "                                  provided IP\n");
+		fprintf(stderr, "  -m, --netmask                   Display netmask for IP\n");
+		fprintf(stderr, "  -n, --network                   Display network address\n");
+		fprintf(stderr, "  -p, --prefix                    Display network prefix\n");
+		fprintf(stderr, "      --minaddr                   Display the minimum address in the network\n");
+		fprintf(stderr, "      --maxaddr                   Display the maximum address in the network\n");
+		fprintf(stderr, "      --addresses                 Display the maximum number of addresses in\n");
+		fprintf(stderr, "                                  the network\n");
+		fprintf(stderr, "      --addrspace                 Display the address space the network\n");
+		fprintf(stderr, "                                  resides on\n");
+		fprintf(stderr, "  -s, --silent                    Don't ever display error messages\n");
+		fprintf(stderr, "  -v, --version                   Display program version\n");
+		fprintf(stderr, "\n");
+		fprintf(stderr, "Help options:\n");
+		fprintf(stderr, "  -?, --help                      Show this help message\n");
+		fprintf(stderr, "      --usage                     Display brief usage message\n");
+	} else {
+		fprintf(stderr, "Usage: ipcalc [-46sv?] [-c|--check] [-r|--random-private=STRING] [-i|--info]\n");
+		fprintf(stderr, "        [--all-info] [-4|--ipv4] [-6|--ipv6] [-b|--broadcast]\n");
+		fprintf(stderr, "        [-h|--hostname] [-o|--lookup-host=STRING] [-g|--geoinfo]\n");
+		fprintf(stderr, "        [-m|--netmask] [-n|--network] [-p|--prefix] [--minaddr] [--maxaddr]\n");
+		fprintf(stderr, "        [--addresses] [--addrspace] [-s|--silent] [-v|--version]\n");
+		fprintf(stderr, "        [-?|--help] [--usage]\n");
+	}
+}
+
 /*!
   \fn main(int argc, const char **argv)
   \brief wrapper program for ipcalc functions.
@@ -1026,76 +1104,98 @@ int str_to_prefix(int *ipv6, const char *prefixStr, unsigned fix)
 
   For more information, please see the ipcalc(1) man page.
 */
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 	int doCheck = 0;
 	int familyIPv4 = 0, familyIPv6 = 0;
-	int rc;
 	char *randomStr = NULL;
 	char *hostname = NULL;
 	int doVersion = 0;
-	poptContext optCon;
-	char *ipStr, *prefixStr = NULL, *netmaskStr = NULL, *chptr;
+	char *ipStr = NULL, *prefixStr = NULL, *netmaskStr = NULL, *chptr = NULL;
 	int prefix = -1;
 	ip_info_st info;
 	unsigned flags = 0;
 	int r = 0;
+	int c;
 
-	struct poptOption optionsTable[] = {
-		{"check", 'c', POPT_BIT_SET, &flags, FLAG_CHECK_ADDRESS,
-		 "Validate IP address",},
-		{"random-private", 'r', POPT_ARG_STRING, &randomStr, 0,
-		 "Generate a random private IP network using the provided netmask",},
-		{"info", 'i', POPT_BIT_SET, &flags, FLAG_SHOW_INFO,
-		 "Print information on the provided IP address",},
-		{"all-info", 0, POPT_BIT_SET, &flags, FLAG_SHOW_ALL_INFO,
-		 "Print verbose information on the provided IP address",},
-		{"ipv4", '4', 0, &familyIPv4, 0,
-		 "Explicitly specify the IPv4 address family",},
-		{"ipv6", '6', 0, &familyIPv6, 0,
-		 "Explicitly specify the IPv6 address family",},
-		{"broadcast", 'b', POPT_BIT_SET, &flags, FLAG_SHOW_BROADCAST,
-		 "Display calculated broadcast address",},
-		{"hostname", 'h', POPT_BIT_SET, &flags, FLAG_RESOLVE_HOST,
-		 "Show hostname determined via DNS"},
-		{"lookup-host", 'o', POPT_ARG_STRING, &hostname, 0,
-		 "Show IP as determined via DNS"},
-#ifdef USE_GEOIP
-		{"geoinfo", 'g', POPT_BIT_SET, &flags, FLAG_SHOW_GEOIP,
-		 "Show Geographic information about the provided IP"},
-#endif
-		{"netmask", 'm', POPT_BIT_SET, &flags, FLAG_SHOW_NETMASK,
-		 "Display netmask for IP"},
-		{"network", 'n', POPT_BIT_SET, &flags, FLAG_SHOW_NETWORK,
-		 "Display network address",},
-		{"prefix", 'p', POPT_BIT_SET, &flags, FLAG_SHOW_PREFIX,
-		 "Display network prefix",},
-		{"minaddr", '\0', POPT_BIT_SET, &flags, FLAG_SHOW_MINADDR,
-		 "Display the minimum address in the network",},
-		{"maxaddr", '\0', POPT_BIT_SET, &flags, FLAG_SHOW_MAXADDR,
-		 "Display the maximum address in the network",},
-		{"addresses", '\0', POPT_BIT_SET, &flags, FLAG_SHOW_ADDRESSES,
-		 "Display the maximum number of addresses in the network",},
-		{"addrspace", '\0', POPT_BIT_SET, &flags, FLAG_SHOW_ADDRSPACE,
-		 "Display the address space the network resides on",},
-		{"silent", 's', 0, &beSilent, 0,
-		 "Don't ever display error messages"},
-		{"version", 'v', 0, &doVersion, 0,
-		 "Display program version"},
-		POPT_AUTOHELP {NULL, '\0', 0, 0, 0, NULL, NULL}
-	};
+	while (1) {
+		c = getopt_long(argc, argv, "cr:i46bho:gmnpsv", long_options, NULL);
+		if (c == -1)
+			break;
 
-	optCon = poptGetContext("ipcalc", argc, argv, optionsTable, 0);
-	poptReadDefaultConfig(optCon, 1);
-
-	if ((rc = poptGetNextOpt(optCon)) < -1) {
-		if (!beSilent) {
-			fprintf(stderr, "ipcalc: bad argument %s: %s\n",
-				poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
-				poptStrerror(rc));
-			poptPrintHelp(optCon, stderr, 0);
+		switch(c) {
+			case 'c':
+				flags |= FLAG_CHECK_ADDRESS;
+				break;
+			case 'r':
+				randomStr = strdup(optarg);
+				if (randomStr == NULL) exit(1);
+				break;
+			case 'i':
+				flags |= FLAG_SHOW_INFO;
+				break;
+			case OPT_ALLINFO:
+				flags |= FLAG_SHOW_ALL_INFO;
+				break;
+			case '4':
+				familyIPv4 = 1;
+				break;
+			case '6':
+				familyIPv6 = 1;
+				break;
+			case 'b':
+				flags |= FLAG_SHOW_BROADCAST;
+				break;
+			case 'h':
+				flags |= FLAG_RESOLVE_HOST;
+				break;
+			case 'o':
+				hostname = strdup(optarg);
+				if (hostname == NULL) exit(1);
+				break;
+			case 'g':
+				flags |= FLAG_SHOW_GEOIP;
+				break;
+			case 'm':
+				flags |= FLAG_SHOW_NETMASK;
+				break;
+			case 'n':
+				flags |= FLAG_SHOW_NETWORK;
+				break;
+			case 'p':
+				flags |= FLAG_SHOW_PREFIX;
+				break;
+			case OPT_MINADDR:
+				flags |= FLAG_SHOW_MINADDR;
+				break;
+			case OPT_MAXADDR:
+				flags |= FLAG_SHOW_MAXADDR;
+				break;
+			case OPT_ADDRESSES:
+				flags |= FLAG_SHOW_ADDRESSES;
+				break;
+			case OPT_ADDRSPACE:
+				flags |= FLAG_SHOW_ADDRSPACE;
+				break;
+			case 's':
+				beSilent = 1;
+				break;
+			case 'v':
+				doVersion = 1;
+				break;
+			case OPT_USAGE:
+				usage(0);
+				exit(0);
+			case '?':
+				usage(1);
+				exit(0);
 		}
-		return 1;
+	}
+
+	if (optind < argc) {
+		ipStr = argv[optind++];
+		if (optind < argc)
+			chptr = argv[optind++];
 	}
 
 	if (doVersion) {
@@ -1123,11 +1223,11 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	if (hostname == NULL && randomStr == NULL && !(ipStr = (char *)poptGetArg(optCon))) {
+	if (hostname == NULL && randomStr == NULL && !ipStr) {
 		if (!beSilent) {
 			fprintf(stderr,
 				"ipcalc: ip address expected\n");
-			poptPrintHelp(optCon, stderr, 0);
+			usage(1);
 		}
 		return 1;
 	}
@@ -1175,14 +1275,14 @@ int main(int argc, const char **argv)
 		familyIPv6 = 1;
 	}
 
-	if ((chptr = (char *)poptGetArg(optCon))) {
+	if (chptr) {
 		if (familyIPv6 == 0) {
 			prefixStr = chptr;
 		} else {
 			if (!beSilent) {
 				fprintf(stderr, "ipcalc: unexpected argument: %s\n",
 					chptr);
-				poptPrintHelp(optCon, stderr, 0);
+				usage(1);
 			}
 			return 1;
 		}
@@ -1212,7 +1312,7 @@ int main(int argc, const char **argv)
 				if (!beSilent) {
 					fprintf(stderr,
 						"ipcalc: both netmask and prefix specified\n");
-					poptPrintHelp(optCon, stderr, 0);
+					usage(1);
 				}
 				return 1;
 			}
@@ -1241,8 +1341,6 @@ int main(int argc, const char **argv)
 	if (!(flags & FLAGS_TO_IGNORE_MASK)) {
 		flags |= FLAG_SHOW_INFO;
 	}
-
-	poptFreeContext(optCon);
 
 	/* we know what we want to display now, so display it. */
 	if (flags & FLAG_SHOW_INFO) {
