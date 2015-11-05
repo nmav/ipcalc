@@ -1063,13 +1063,9 @@ void usage(unsigned verbose)
 		fprintf(stderr, "                                  address\n");
 		fprintf(stderr, "  -4, --ipv4                      Explicitly specify the IPv4 address family\n");
 		fprintf(stderr, "  -6, --ipv6                      Explicitly specify the IPv6 address family\n");
+		fprintf(stderr, "\n");
+		fprintf(stderr, "Specific info options:\n");
 		fprintf(stderr, "  -b, --broadcast                 Display calculated broadcast address\n");
-		fprintf(stderr, "  -h, --hostname                  Show hostname determined via DNS\n");
-		fprintf(stderr, "  -o, --lookup-host=STRING        Show IP as determined via DNS\n");
-#ifdef USE_GEOIP
-		fprintf(stderr, "  -g, --geoinfo                   Show Geographic information about the\n");
-#endif
-		fprintf(stderr, "                                  provided IP\n");
 		fprintf(stderr, "  -m, --netmask                   Display netmask for IP\n");
 		fprintf(stderr, "  -n, --network                   Display network address\n");
 		fprintf(stderr, "  -p, --prefix                    Display network prefix\n");
@@ -1079,10 +1075,16 @@ void usage(unsigned verbose)
 		fprintf(stderr, "                                  the network\n");
 		fprintf(stderr, "      --addrspace                 Display the address space the network\n");
 		fprintf(stderr, "                                  resides on\n");
+		fprintf(stderr, "  -h, --hostname                  Show hostname determined via DNS\n");
+		fprintf(stderr, "  -o, --lookup-host=STRING        Show IP as determined via DNS\n");
+#ifdef USE_GEOIP
+		fprintf(stderr, "  -g, --geoinfo                   Show Geographic information about the\n");
+		fprintf(stderr, "                                  provided IP\n");
+#endif
+		fprintf(stderr, "\n");
+		fprintf(stderr, "Other options:\n");
 		fprintf(stderr, "  -s, --silent                    Don't ever display error messages\n");
 		fprintf(stderr, "  -v, --version                   Display program version\n");
-		fprintf(stderr, "\n");
-		fprintf(stderr, "Help options:\n");
 		fprintf(stderr, "  -?, --help                      Show this help message\n");
 		fprintf(stderr, "      --usage                     Display brief usage message\n");
 	} else {
