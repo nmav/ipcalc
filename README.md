@@ -3,11 +3,13 @@
 Information about this ipcalc
 =============================
 
-This is an enhanced version of the ipcalc tool found in Fedora
-system. It has several additions, such as printing a summary about
-the provided network address if no parameters are specified, and
-transparent IPv6 support. In addition it will use libGeoIP if available
-to provide geographic information.
+This is a modern ipcalc tool for IPv4 and IPv6. It acts both as a tool
+to output human readable information about a network or address, as well
+as a tool suitable to be used by scripts or other programs.
+
+It supports printing a summary about the provided network address, multiple
+command line options per information to be printed, transparent IPv6 support,
+and in addition it will use libGeoIP if available to provide geographic information.
 
 
 Examples
