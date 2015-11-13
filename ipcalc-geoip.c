@@ -19,7 +19,6 @@
 
 #define _GNU_SOURCE		/* asprintf */
 #include <ctype.h>
-#include <popt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
