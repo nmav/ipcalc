@@ -1,3 +1,5 @@
+dist: trusty
+sudo: required
 language: c
 compiler:
   - clang
@@ -5,7 +7,7 @@ compiler:
 
 before_script:
   - sudo apt-get update -qq
-  - sudo apt-get install libpopt-dev libgeoip-dev
+  - sudo apt-get install -qq libpopt-dev libgeoip-dev
 
 script: LIBS=-lrt USE_GEOIP=no LIBPATH=/usr/lib/x86_64-linux-gnu make && make check
 
