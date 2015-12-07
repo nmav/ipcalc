@@ -1034,7 +1034,7 @@ static const struct option long_options[] = {
 	{"ipv6", 0, 0, '6'},
 	{"broadcast", 0, 0, 'b'},
 	{"hostname", 0, 0, 'h'},
-	{"lookup-host", 0, 0, 'o'},
+	{"lookup-host", 1, 0, 'o'},
 #ifdef USE_GEOIP
 	{"geoinfo", 0, 0, 'g'},
 #endif
