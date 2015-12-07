@@ -25,6 +25,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -39,6 +40,7 @@
 #include "ipcalc.h"
 
 int beSilent = 0;
+static unsigned colors = 0;
 
 /*!
   \file ipcalc.c
@@ -1097,6 +1099,40 @@ void usage(unsigned verbose)
 	}
 }
 
+
+#define KBLUE  "\x1B[34m"
+#define KMAG   "\x1B[35m"
+#define KRESET "\033[0m"
+
+#define default_printf(...) color_printf(KBLUE, __VA_ARGS__)
+#define dist_printf(...) color_printf(KMAG, __VA_ARGS__)
+
+static void
+__attribute__ ((format(printf, 3, 4)))
+color_printf(const char *color, const char *title, const char *fmt, ...)
+{
+	va_list args;
+	int ret;
+	char *str = NULL;
+
+	va_start(args, fmt);
+	ret = vasprintf(&str, fmt, args);
+	va_end(args);
+
+	if (ret < 0)
+		return;
+
+	fputs(title, stdout);
+	if (colors)
+		fputs(color, stdout);
+
+	fputs(str, stdout);
+	if (colors)
+		fputs(KRESET, stdout);
+	free(str);
+	return;
+}
+
 /*!
   \fn main(int argc, const char **argv)
   \brief wrapper program for ipcalc functions.
@@ -1344,6 +1380,9 @@ int main(int argc, char **argv)
 		flags |= FLAG_SHOW_INFO;
 	}
 
+	if (isatty(STDOUT_FILENO) != 0)
+		colors = 1;
+
 	/* we know what we want to display now, so display it. */
 	if (flags & FLAG_SHOW_INFO) {
 		unsigned single_host = 0;
@@ -1356,53 +1395,56 @@ int main(int argc, char **argv)
 		if ((!randomStr || single_host) &&
 		    (single_host || strcmp(info.network, info.ip) != 0)) {
 			if (info.expanded_ip)
-				printf("Full Address:\t%s\n", info.expanded_ip);
-			printf("Address:\t%s\n", info.ip);
+				default_printf("Full Address:\t", "%s\n", info.expanded_ip);
+			default_printf("Address:\t", "%s\n", info.ip);
 		}
 
 		if (!single_host) {
-			if (info.expanded_network)
-				printf("Full Network:\t%s\n",
-				       info.expanded_network);
-			printf("Network:\t%s/%u\n", info.network, info.prefix);
-			if (info.type)
-				printf("Address space:\t%s\n", info.type);
-			if (info.class)
-				printf("Address class:\t%s\n", info.class);
-			printf("Netmask:\t%s = %u\n", info.netmask,
-			       info.prefix);
+			if (info.expanded_network) {
+				default_printf("Full Network:\t", "%s\n", info.expanded_network);
+			}
+
+			default_printf("Network:\t", "%s/%u\n", info.network, info.prefix);
+
+			default_printf("Netmask:\t", "%s = %u\n", info.netmask, info.prefix);
 
 			if (info.broadcast)
-				printf("Broadcast:\t%s\n", info.broadcast);
+				default_printf("Broadcast:\t", "%s\n", info.broadcast);
 			printf("\n");
 
+			if (info.type)
+				dist_printf("Address space:\t", "%s\n", info.type);
+			if (info.class)
+				dist_printf("Address class:\t", "%s\n", info.class);
+
 			if (info.hostmin)
-				printf("HostMin:\t%s\n", info.hostmin);
+				default_printf("HostMin:\t", "%s\n", info.hostmin);
+
 			if (info.hostmax)
-				printf("HostMax:\t%s\n", info.hostmax);
+				default_printf("HostMax:\t", "%s\n", info.hostmax);
 
 			if (familyIPv6 && info.prefix < 112)
-				printf("Hosts/Net:\t2^(%u) = %s\n", 128-info.prefix, info.hosts);
+				default_printf("Hosts/Net:\t", "2^(%u) = %s\n", 128-info.prefix, info.hosts);
 			else
-				printf("Hosts/Net:\t%s\n", info.hosts);
+				default_printf("Hosts/Net:\t", "%s\n", info.hosts);
 		} else {
 			if (info.type)
-				printf("Address space:\t%s\n", info.type);
+				default_printf("Address space:\t", "%s\n", info.type);
 			if (info.class)
-				printf("Address class:\t%s\n", info.class);
+				default_printf("Address class:\t", "%s\n", info.class);
 
 		}
 
 		if (info.geoip_country || info.geoip_city || info.geoip_coord) {
 			printf("\n");
 			if (info.geoip_ccode)
-				printf("Country code:\t%s\n", info.geoip_ccode);
+				dist_printf("Country code:\t", "%s\n", info.geoip_ccode);
 			if (info.geoip_country)
-				printf("Country:\t%s\n", info.geoip_country);
+				dist_printf("Country:\t", "%s\n", info.geoip_country);
 			if (info.geoip_city)
-				printf("City:\t\t%s\n", info.geoip_city);
+				dist_printf("City:\t\t", "%s\n", info.geoip_city);
 			if (info.geoip_coord)
-				printf("Coordinates:\t%s\n", info.geoip_coord);
+				dist_printf("Coordinates:\t", "%s\n", info.geoip_coord);
 		}
 
 	} else {
