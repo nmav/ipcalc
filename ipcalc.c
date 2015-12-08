@@ -1401,7 +1401,7 @@ int main(int argc, char **argv)
 
 		if (!single_host) {
 			if (info.expanded_network) {
-				default_printf("Full Network:\t", "%s\n", info.expanded_network);
+				default_printf("Full Network:\t", "%s/%u\n", info.expanded_network, info.prefix);
 			}
 
 			default_printf("Network:\t", "%s/%u\n", info.network, info.prefix);
