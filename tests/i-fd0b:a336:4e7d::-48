@@ -1,4 +1,4 @@
-Full Network:	fd0b:a336:4e7d:0000:0000:0000:0000:0000
+Full Network:	fd0b:a336:4e7d:0000:0000:0000:0000:0000/48
 Network:	fd0b:a336:4e7d::/48
 Netmask:	ffff:ffff:ffff:: = 48
 
