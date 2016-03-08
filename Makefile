@@ -22,7 +22,7 @@ endif
 
 all: ipcalc
 
-ipcalc: ipcalc.c ipcalc-geoip.c
+ipcalc: ipcalc.c ipcalc-geoip.c ipcalc-reverse.c
 	$(CC) $(CFLAGS) -DVERSION="\"$(VERSION)\"" $^ -o $@ $(LDFLAGS)
 
 clean:

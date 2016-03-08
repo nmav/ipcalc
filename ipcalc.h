@@ -8,4 +8,7 @@ int geo_setup(void);
 # define geo_setup() -1
 #endif
 
+char *calc_reverse_dns4(struct in_addr ip, unsigned prefix, struct in_addr net, struct in_addr bcast);
+char *calc_reverse_dns6(struct in6_addr *ip, unsigned prefix);
+
 extern int beSilent;

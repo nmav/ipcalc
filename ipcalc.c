@@ -271,6 +271,7 @@ typedef struct ip_info_st {
 	char *ip;
 	char *expanded_ip;
 	char *expanded_network;
+	char *reverse_dns;
 
 	char *network;
 	char *broadcast;	/* ipv4 only */
@@ -567,6 +568,7 @@ unsigned default_ipv4_prefix(struct in_addr net)
 #define FLAG_GET_GEOIP (1<<14)
 #define FLAG_SHOW_GEOIP ((1<<15)|FLAG_GET_GEOIP)
 #define FLAG_SHOW_ALL_INFO ((1<<16)|FLAG_SHOW_INFO)
+#define FLAG_SHOW_REVERSE (1<<17)
 
 #define FLAGS_TO_IGNORE (FLAG_GET_GEOIP|(1<<16))
 #define FLAGS_TO_IGNORE_MASK (~FLAGS_TO_IGNORE)
@@ -651,6 +653,8 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	info->broadcast = strdup(namebuf);
 
 	network = calc_network(ip, prefix);
+
+	info->reverse_dns = calc_reverse_dns4(network, prefix, network, broadcast);
 
 	memset(&namebuf, '\0', sizeof(namebuf));
 	if (inet_ntop(AF_INET, &network, namebuf, INET_ADDRSTRLEN) == NULL) {
@@ -890,6 +894,8 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	info->expanded_network = expand_ipv6(&network);
 	info->type = ipv6_net_to_type(&network, prefix);
 
+	info->reverse_dns = calc_reverse_dns6(&network, prefix);
+
 	if (prefix < 128) {
 		info->hostmin = strdup(errBuf);
 
@@ -909,6 +915,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	}
 
 	snprintf(info->hosts, sizeof(info->hosts), "%s", p2_table(128 - prefix));
+
 
 	if (flags & FLAG_GET_GEOIP)
 		geo_ipv6_lookup(&ip6, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
@@ -1025,6 +1032,7 @@ int str_to_prefix(int *ipv6, const char *prefixStr, unsigned fix)
 #define OPT_ADDRESSES 4
 #define OPT_ADDRSPACE 5
 #define OPT_USAGE 6
+#define OPT_REVERSE 7
 static const struct option long_options[] = {
 	{"check", 0, 0, 'c'},
 	{"random-private", 1, 0, 'r'},
@@ -1035,6 +1043,7 @@ static const struct option long_options[] = {
 	{"broadcast", 0, 0, 'b'},
 	{"hostname", 0, 0, 'h'},
 	{"lookup-host", 1, 0, 'o'},
+	{"reverse-dns", 0, 0, OPT_REVERSE},
 #ifdef USE_GEOIP
 	{"geoinfo", 0, 0, 'g'},
 #endif
@@ -1063,6 +1072,7 @@ void usage(unsigned verbose)
 		fprintf(stderr, "  -i, --info                      Print information on the provided IP address\n");
 		fprintf(stderr, "      --all-info                  Print verbose information on the provided IP\n");
 		fprintf(stderr, "                                  address\n");
+		fprintf(stderr, "      --reverse-dns               Print network in a the reverse DNS format\n");
 		fprintf(stderr, "  -4, --ipv4                      Explicitly specify the IPv4 address family\n");
 		fprintf(stderr, "  -6, --ipv6                      Explicitly specify the IPv6 address family\n");
 		fprintf(stderr, "\n");
@@ -1095,6 +1105,7 @@ void usage(unsigned verbose)
 		fprintf(stderr, "        [-h|--hostname] [-o|--lookup-host=STRING] [-g|--geoinfo]\n");
 		fprintf(stderr, "        [-m|--netmask] [-n|--network] [-p|--prefix] [--minaddr] [--maxaddr]\n");
 		fprintf(stderr, "        [--addresses] [--addrspace] [-s|--silent] [-v|--version]\n");
+		fprintf(stderr, "        [--reverse-dns]\n");
 		fprintf(stderr, "        [-?|--help] [--usage]\n");
 	}
 }
@@ -1174,6 +1185,9 @@ int main(int argc, char **argv)
 				break;
 			case OPT_ALLINFO:
 				flags |= FLAG_SHOW_ALL_INFO;
+				break;
+			case OPT_REVERSE:
+				flags |= FLAG_SHOW_REVERSE;
 				break;
 			case '4':
 				familyIPv4 = 1;
@@ -1408,10 +1422,16 @@ int main(int argc, char **argv)
 
 			default_printf("Netmask:\t", "%s = %u\n", info.netmask, info.prefix);
 
+
 			if (info.broadcast)
 				default_printf("Broadcast:\t", "%s\n", info.broadcast);
-			printf("\n");
+		}
 
+		if (info.reverse_dns)
+			default_printf("Reverse DNS:\t", "%s\n", info.reverse_dns);
+
+		if (!single_host) {
+			printf("\n");
 			if (info.type)
 				dist_printf("Address space:\t", "%s\n", info.type);
 			if (info.class)
@@ -1463,6 +1483,10 @@ int main(int argc, char **argv)
 
 		if (flags & FLAG_SHOW_NETWORK) {
 			printf("NETWORK=%s\n", info.network);
+		}
+
+		if (flags & FLAG_SHOW_REVERSE) {
+			printf("REVERSEDNS=%s\n", info.reverse_dns);
 		}
 
 		if ((flags & FLAG_SHOW_MINADDR) && info.hostmin) {
