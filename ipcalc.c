@@ -569,8 +569,10 @@ unsigned default_ipv4_prefix(struct in_addr net)
 #define FLAG_SHOW_GEOIP ((1<<15)|FLAG_GET_GEOIP)
 #define FLAG_SHOW_ALL_INFO ((1<<16)|FLAG_SHOW_INFO)
 #define FLAG_SHOW_REVERSE (1<<17)
+#define FLAG_ASSUME_CLASS_PREFIX (1<<18)
 
-#define FLAGS_TO_IGNORE (FLAG_GET_GEOIP|(1<<16))
+/* Flags that are not real options */
+#define FLAGS_TO_IGNORE (FLAG_GET_GEOIP|FLAG_ASSUME_CLASS_PREFIX|(1<<16))
 #define FLAGS_TO_IGNORE_MASK (~FLAGS_TO_IGNORE)
 
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
@@ -613,8 +615,11 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 			}
 			ipStr = tmp;
 		}
-	} else {		/* assume good old days classful Internet */
-		prefix = default_ipv4_prefix(ip);
+	} else { /* assume good old days classful Internet */
+		if (flags & FLAG_ASSUME_CLASS_PREFIX)
+			prefix = default_ipv4_prefix(ip);
+		else
+			prefix = 32;
 	}
 
 	if (prefix > 32) {
@@ -1033,6 +1038,8 @@ int str_to_prefix(int *ipv6, const char *prefixStr, unsigned fix)
 #define OPT_ADDRSPACE 5
 #define OPT_USAGE 6
 #define OPT_REVERSE 7
+#define OPT_CLASS_PREFIX 8
+
 static const struct option long_options[] = {
 	{"check", 0, 0, 'c'},
 	{"random-private", 1, 0, 'r'},
@@ -1050,6 +1057,7 @@ static const struct option long_options[] = {
 	{"netmask", 0, 0, 'm'},
 	{"network", 0, 0, 'n'},
 	{"prefix", 0, 0, 'p'},
+	{"class-prefix", 0, 0, OPT_CLASS_PREFIX},
 	{"minaddr", 0, 0, OPT_MINADDR},
 	{"maxaddr", 0, 0, OPT_MAXADDR},
 	{"addresses", 0, 0, OPT_ADDRESSES},
@@ -1095,6 +1103,8 @@ void usage(unsigned verbose)
 #endif
 		fprintf(stderr, "\n");
 		fprintf(stderr, "Other options:\n");
+		fprintf(stderr, "      --class-prefix              When specified the default prefix will be determined\n");
+		fprintf(stderr, "                                  by the IPv4 address class\n");
 		fprintf(stderr, "  -s, --silent                    Don't ever display error messages\n");
 		fprintf(stderr, "  -v, --version                   Display program version\n");
 		fprintf(stderr, "  -?, --help                      Show this help message\n");
@@ -1105,7 +1115,7 @@ void usage(unsigned verbose)
 		fprintf(stderr, "        [-h|--hostname] [-o|--lookup-host=STRING] [-g|--geoinfo]\n");
 		fprintf(stderr, "        [-m|--netmask] [-n|--network] [-p|--prefix] [--minaddr] [--maxaddr]\n");
 		fprintf(stderr, "        [--addresses] [--addrspace] [-s|--silent] [-v|--version]\n");
-		fprintf(stderr, "        [--reverse-dns]\n");
+		fprintf(stderr, "        [--reverse-dns] [--class-prefix]\n");
 		fprintf(stderr, "        [-?|--help] [--usage]\n");
 	}
 }
@@ -1185,6 +1195,9 @@ int main(int argc, char **argv)
 				break;
 			case OPT_ALLINFO:
 				flags |= FLAG_SHOW_ALL_INFO;
+				break;
+			case OPT_CLASS_PREFIX:
+				flags |= FLAG_ASSUME_CLASS_PREFIX;
 				break;
 			case OPT_REVERSE:
 				flags |= FLAG_SHOW_REVERSE;
@@ -1449,9 +1462,9 @@ int main(int argc, char **argv)
 				default_printf("Hosts/Net:\t", "%s\n", info.hosts);
 		} else {
 			if (info.type)
-				default_printf("Address space:\t", "%s\n", info.type);
+				dist_printf("Address space:\t", "%s\n", info.type);
 			if (info.class)
-				default_printf("Address class:\t", "%s\n", info.class);
+				dist_printf("Address class:\t", "%s\n", info.class);
 
 		}
 

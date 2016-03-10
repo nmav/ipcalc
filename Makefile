@@ -29,9 +29,9 @@ clean:
 	rm -f ipcalc
 
 check: ipcalc
-	./ipcalc -bmnp 12.15.1.5 > out.tmp && cmp out.tmp tests/12.15.1.5
-	./ipcalc -bmnp 129.15.31.5 > out.tmp && cmp out.tmp tests/129.15.31.5
-	./ipcalc -bmnp 193.92.31.0 > out.tmp && cmp out.tmp tests/193.92.31.0
+	./ipcalc -bmnp 12.15.1.5 --class-prefix > out.tmp && cmp out.tmp tests/12.15.1.5
+	./ipcalc -bmnp 129.15.31.5 --class-prefix > out.tmp && cmp out.tmp tests/129.15.31.5
+	./ipcalc -bmnp 193.92.31.0 --class-prefix > out.tmp && cmp out.tmp tests/193.92.31.0
 	./ipcalc -bmnp 192.168.1.5/31 > out.tmp && cmp out.tmp tests/192.168.1.5-31
 	./ipcalc -bmnp 10.10.10.5/24 > out.tmp && cmp out.tmp tests/192.168.1.5-24
 	./ipcalc -bmnp 10.100.4.1/30 > out.tmp && cmp out.tmp tests/192.168.1.5-30
