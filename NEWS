@@ -1,4 +1,8 @@
 * Version 0.1.7 (unreleased)
+- Assume a classless IPv4 range by default. This breaks compatibility
+  with previous versions since, unless --class-prefix is specified,
+  the default IPv4 prefix is now /32.
+- Added support for printing reverse DNS addresses.
 
 
 * Version 0.1.6 (released 2015-12-08)
