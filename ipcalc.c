@@ -1440,7 +1440,7 @@ int main(int argc, char **argv)
 				default_printf("Broadcast:\t", "%s\n", info.broadcast);
 		}
 
-		if (info.reverse_dns)
+		if (((flags & FLAG_SHOW_ALL_INFO) == FLAG_SHOW_ALL_INFO) && info.reverse_dns)
 			default_printf("Reverse DNS:\t", "%s\n", info.reverse_dns);
 
 		if (!single_host) {
