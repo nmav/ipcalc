@@ -1,7 +1,6 @@
 Full Network:	fd0b:a336:4e7d:0000:0000:0000:0000:0000/48
 Network:	fd0b:a336:4e7d::/48
 Netmask:	ffff:ffff:ffff:: = 48
-Reverse DNS:	d.7.e.4.6.3.3.a.b.0.d.f.ip6.arpa.
 
 Address space:	Unique Local Unicast
 HostMin:	fd0b:a336:4e7d::
