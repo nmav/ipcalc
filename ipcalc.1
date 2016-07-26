@@ -13,13 +13,13 @@ parsing in scripts, generate random private addresses, resolve an IP address,
 or check the validity of an address.
 
 By default or when the \fB\-\-info\fR or \fB\-\-all\-info\fR parameters
-are specified the information provided is free form human readable. Otherwise,
+are specified the information provided is free form and human readable. Otherwise,
 when specific options are given (e.g., \fB\-\-prefix\fR) the output is
 in the VAR=VALUE format.
 
 The various options specify what information \fBipcalc\fR should display
-on standard out. Multiple options may be specified.  An IP address to
-operate on must always be specified, and several operations also require
+on standard output. Multiple options may be specified.  It is required
+to specify an IP address; several operations require
 a netmask or a CIDR prefix as well.
 
 .SH OPTIONS
