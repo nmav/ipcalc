@@ -1,3 +1,8 @@
+* Version 0.2.0 (released 2017-05-15)
+- Added the --split (-S) option. This allows splitting networks
+  into smaller chunks.
+
+
 * Version 0.1.8 (released 2016-06-14)
 - Do not print the reverse DNS information by default. Only
   when --all-info is specified.
