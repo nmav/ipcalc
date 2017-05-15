@@ -5,7 +5,7 @@ LIBPATH?=/usr/lib64
 #LIBPATH=/usr/lib/x86_64-linux-gnu
 
 LIBS?=
-VERSION=0.1.8
+VERSION=0.2.0
 CC?=gcc
 CFLAGS?=-O2 -g -Wall
 LDFLAGS=$(LIBS)
@@ -22,7 +22,7 @@ endif
 
 all: ipcalc
 
-ipcalc: ipcalc.c ipcalc-geoip.c ipcalc-reverse.c
+ipcalc: ipcalc.c ipcalc-geoip.c ipcalc-reverse.c netsplit.c
 	$(CC) $(CFLAGS) -DVERSION="\"$(VERSION)\"" $^ -o $@ $(LDFLAGS)
 
 clean:
@@ -37,6 +37,15 @@ check: ipcalc
 	./ipcalc -bmnp 10.100.4.1/30 > out.tmp && cmp out.tmp tests/192.168.1.5-30
 	./ipcalc -bmnp 10.100.4.1/16 > out.tmp && cmp out.tmp tests/192.168.1.5-16
 	./ipcalc -bmnp 10.10.10.10/8 > out.tmp && cmp out.tmp tests/192.168.1.5-8
+	./ipcalc -S 18 10.10.10.10/16 > out.tmp && cmp out.tmp tests/split-10.10.10.0-16-18
+	./ipcalc -S 24 10.10.10.0/16 > out.tmp && cmp out.tmp tests/split-10.10.10.0-16-24
+	./ipcalc -S 26 192.168.5.45/24 > out.tmp && cmp out.tmp tests/split-192.168.5.45-24-26
+	./ipcalc -S 29 192.168.5.0/24 > out.tmp && cmp out.tmp tests/split-192.168.5.0-24-29
+	./ipcalc -S 31 192.168.5.0/24 > out.tmp && cmp out.tmp tests/split-192.168.5.0-24-31
+	./ipcalc -S 32 192.168.5.0/24 > out.tmp && cmp out.tmp tests/split-192.168.5.0-24-32
+	./ipcalc -S 64 2a03:2880:20:4f06:face::/56 > out.tmp && cmp out.tmp tests/split-2a03:2880:20:4f06:face::-56-64
+	./ipcalc -S 128 fcfa:b4ca:f1d8:125b:dc00::/127 > out.tmp && cmp out.tmp tests/split-fcfa:b4ca:f1d8:125b:dc00::-127-128
+	./ipcalc -S 120 fcfa:b4ca:f1d8:125b:dc00::/112 > out.tmp && cmp out.tmp tests/split-fcfa:b4ca:f1d8:125b:dc00::-112-120
 	./ipcalc --addrspace -bmnp 193.92.150.3/24 > out.tmp && cmp out.tmp tests/193.92.150.3-24
 	./ipcalc --addrspace -bmnp fd95:6be5:0ae0:84a5::/64 > out.tmp && cmp out.tmp tests/fd95:6be5:0ae0:84a5::-64
 	./ipcalc --addrspace -bmnp fd0b:a336:4e7d::/48 > out.tmp && cmp out.tmp tests/fd0b:a336:4e7d::-48

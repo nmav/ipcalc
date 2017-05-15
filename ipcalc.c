@@ -78,7 +78,7 @@ int safe_atoi(const char *s, int *ret_i)
 }
 
 /*!
-  \fn struct in_addr prefix2mask(int bits)
+  \fn uint32_t prefix2mask(int bits)
   \brief creates a netmask from a specified number of bits
 
   This function converts a prefix length to a netmask.  As CIDR (classless
@@ -91,16 +91,15 @@ int safe_atoi(const char *s, int *ret_i)
   \param prefix is the number of bits to create a mask for.
   \return a network mask, in network byte order.
 */
-struct in_addr prefix2mask(int prefix)
+uint32_t prefix2mask(int prefix)
 {
 	struct in_addr mask;
 	memset(&mask, 0, sizeof(mask));
 	if (prefix) {
-		mask.s_addr = htonl(~((1 << (32 - prefix)) - 1));
+		return htonl(~((1 << (32 - prefix)) - 1));
 	} else {
-		mask.s_addr = htonl(0);
+		return htonl(0);
 	}
-	return mask;
 }
 
 /*!
@@ -116,8 +115,10 @@ struct in_addr prefix2mask(int prefix)
 */
 struct in_addr calc_broadcast(struct in_addr addr, int prefix)
 {
-	struct in_addr mask = prefix2mask(prefix);
+	struct in_addr mask;
 	struct in_addr broadcast;
+
+	mask.s_addr = prefix2mask(prefix);
 
 	memset(&broadcast, 0, sizeof(broadcast));
 	broadcast.s_addr = (addr.s_addr & mask.s_addr) | ~mask.s_addr;
@@ -135,8 +136,10 @@ struct in_addr calc_broadcast(struct in_addr addr, int prefix)
 */
 struct in_addr calc_network(struct in_addr addr, int prefix)
 {
-	struct in_addr mask = prefix2mask(prefix);
+	struct in_addr mask;
 	struct in_addr network;
+
+	mask.s_addr = prefix2mask(prefix);
 
 	memset(&network, 0, sizeof(network));
 	network.s_addr = addr.s_addr & mask.s_addr;
@@ -266,29 +269,6 @@ int ipv4_mask_to_int(const char *prefix)
 
 	return mask2prefix(in);
 }
-
-typedef struct ip_info_st {
-	char *ip;
-	char *expanded_ip;
-	char *expanded_network;
-	char *reverse_dns;
-
-	char *network;
-	char *broadcast;	/* ipv4 only */
-	char *netmask;
-	char *hostname;
-	char *geoip_country;
-	char *geoip_ccode;
-	char *geoip_city;
-	char *geoip_coord;
-	char hosts[64];		/* number of hosts in text */
-	unsigned prefix;
-
-	char *hostmin;
-	char *hostmax;
-	const char *type;
-	const char *class;
-} ip_info_st;
 
 /* Returns powers of two in textual format */
 const char *p2_table(unsigned pow)
@@ -553,6 +533,25 @@ unsigned default_ipv4_prefix(struct in_addr net)
 	return 24;
 }
 
+char *ipv4_prefix_to_hosts(char *hosts, unsigned hosts_size, unsigned prefix)
+{
+	unsigned tmp;
+
+	if (prefix >= 31) {
+		snprintf(hosts, hosts_size, "%s", p2_table(32 - prefix));
+	} else {
+		tmp = (1 << (32 - prefix)) - 2;
+		snprintf(hosts, hosts_size, "%u", tmp);
+	}
+	return hosts;
+}
+
+char *ipv6_prefix_to_hosts(char *hosts, unsigned hosts_size, unsigned prefix)
+{
+	snprintf(hosts, hosts_size, "%s", p2_table(128 - prefix));
+	return hosts;
+}
+
 #define FLAG_RESOLVE_HOST 1
 #define FLAG_RESOLVE_IP (1<<1)
 #define FLAG_CHECK_ADDRESS (1<<2)
@@ -570,9 +569,10 @@ unsigned default_ipv4_prefix(struct in_addr net)
 #define FLAG_SHOW_ALL_INFO ((1<<16)|FLAG_SHOW_INFO)
 #define FLAG_SHOW_REVERSE (1<<17)
 #define FLAG_ASSUME_CLASS_PREFIX (1<<18)
+#define FLAG_SPLIT (1<<19)
 
 /* Flags that are not real options */
-#define FLAGS_TO_IGNORE (FLAG_GET_GEOIP|FLAG_ASSUME_CLASS_PREFIX|(1<<16))
+#define FLAGS_TO_IGNORE (FLAG_GET_GEOIP|FLAG_SPLIT|FLAG_ASSUME_CLASS_PREFIX|(1<<16))
 #define FLAGS_TO_IGNORE_MASK (~FLAGS_TO_IGNORE)
 
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
@@ -581,7 +581,6 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
 	char namebuf[INET6_ADDRSTRLEN + 1];
 	char errBuf[250];
-	unsigned hosts;
 
 	memset(info, 0, sizeof(*info));
 
@@ -636,7 +635,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	}
 	info->ip = strdup(namebuf);
 
-	netmask = prefix2mask(prefix);
+	netmask.s_addr = prefix2mask(prefix);
 	memset(&namebuf, '\0', sizeof(namebuf));
 
 	if (inet_ntop(AF_INET, &netmask, namebuf, INET_ADDRSTRLEN) == NULL) {
@@ -704,12 +703,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		info->hostmax = info->network;
 	}
 
-	if (prefix >= 31) {
-		snprintf(info->hosts, sizeof(info->hosts), "%s", p2_table(32 - prefix));
-	} else {
-		hosts = (1 << (32 - prefix)) - 2;
-		snprintf(info->hosts, sizeof(info->hosts), "%u", hosts);
-	}
+	ipv4_prefix_to_hosts(info->hosts, sizeof(info->hosts), prefix);
 
 	if (flags & FLAG_GET_GEOIP)
 		geo_ipv4_lookup(ip, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
@@ -730,14 +724,13 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	return 0;
 }
 
-char *ipv6_prefix_to_mask(unsigned prefix, struct in6_addr *mask)
+int ipv6_prefix_to_mask(unsigned prefix, struct in6_addr *mask)
 {
 	struct in6_addr in6;
 	int i, j;
-	char buf[128];
 
 	if (prefix > 128)
-		return NULL;
+		return -1;
 
 	memset(&in6, 0x0, sizeof(in6));
 	for (i = prefix, j = 0; i > 0; i -= 8, j++) {
@@ -748,10 +741,17 @@ char *ipv6_prefix_to_mask(unsigned prefix, struct in6_addr *mask)
 		}
 	}
 
-	if (inet_ntop(AF_INET6, &in6, buf, sizeof(buf)) == NULL)
+	memcpy(mask, &in6, sizeof(*mask));
+	return 0;
+}
+
+static char *ipv6_mask_to_str(const struct in6_addr *mask)
+{
+	char buf[128];
+
+	if (inet_ntop(AF_INET6, mask, buf, sizeof(buf)) == NULL)
 		return NULL;
 
-	memcpy(mask, &in6, sizeof(*mask));
 	return strdup(buf);
 }
 
@@ -875,14 +875,15 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	info->prefix = prefix;
 
-	info->netmask = ipv6_prefix_to_mask(prefix, &mask);
-	if (!info->netmask) {
+	if (ipv6_prefix_to_mask(prefix, &mask) == -1) {
 		if (!beSilent)
 			fprintf(stderr,
 				"ipcalc: error converting IPv6 prefix: %d\n",
 				prefix);
 		return -1;
 	}
+
+	info->netmask = ipv6_mask_to_str(&mask);
 
 	for (i = 0; i < sizeof(struct in6_addr); i++)
 		network.s6_addr[i] = ip6.s6_addr[i] & mask.s6_addr[i];
@@ -919,7 +920,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 		info->hostmax = info->network;
 	}
 
-	snprintf(info->hosts, sizeof(info->hosts), "%s", p2_table(128 - prefix));
+	ipv6_prefix_to_hosts(info->hosts, sizeof(info->hosts), prefix);
 
 
 	if (flags & FLAG_GET_GEOIP)
@@ -1043,6 +1044,7 @@ int str_to_prefix(int *ipv6, const char *prefixStr, unsigned fix)
 static const struct option long_options[] = {
 	{"check", 0, 0, 'c'},
 	{"random-private", 1, 0, 'r'},
+	{"split", 1, 0, 'S'},
 	{"info", 0, 0, 'i'},
 	{"all-info", 0, 0, OPT_ALLINFO},
 	{"ipv4", 0, 0, '4'},
@@ -1076,7 +1078,8 @@ void usage(unsigned verbose)
 		fprintf(stderr, "Usage: ipcalc [OPTION...]\n");
 		fprintf(stderr, "  -c, --check                     Validate IP address\n");
 		fprintf(stderr, "  -r, --random-private=PREFIX     Generate a random private IP network using\n");
-		fprintf(stderr, "                                  the provided prefix/netmask\n");
+		fprintf(stderr, "  -S, --split=PREFIX              Split the provided network using the\n");
+		fprintf(stderr, "                                  provided prefix/netmask\n");
 		fprintf(stderr, "  -i, --info                      Print information on the provided IP address\n");
 		fprintf(stderr, "      --all-info                  Print verbose information on the provided IP\n");
 		fprintf(stderr, "                                  address\n");
@@ -1120,15 +1123,7 @@ void usage(unsigned verbose)
 	}
 }
 
-
-#define KBLUE  "\x1B[34m"
-#define KMAG   "\x1B[35m"
-#define KRESET "\033[0m"
-
-#define default_printf(...) color_printf(KBLUE, __VA_ARGS__)
-#define dist_printf(...) color_printf(KMAG, __VA_ARGS__)
-
-static void
+void
 __attribute__ ((format(printf, 3, 4)))
 color_printf(const char *color, const char *title, const char *fmt, ...)
 {
@@ -1169,22 +1164,28 @@ int main(int argc, char **argv)
 	int familyIPv4 = 0, familyIPv6 = 0;
 	char *randomStr = NULL;
 	char *hostname = NULL;
+	char *splitStr = NULL;
 	int doVersion = 0;
 	char *ipStr = NULL, *prefixStr = NULL, *netmaskStr = NULL, *chptr = NULL;
-	int prefix = -1;
+	int prefix = -1, splitPrefix = -1;
 	ip_info_st info;
 	unsigned flags = 0;
 	int r = 0;
 	int c;
 
 	while (1) {
-		c = getopt_long(argc, argv, "cr:i46bho:gmnpsv", long_options, NULL);
+		c = getopt_long(argc, argv, "S:cr:i46bho:gmnpsv", long_options, NULL);
 		if (c == -1)
 			break;
 
 		switch(c) {
 			case 'c':
 				flags |= FLAG_CHECK_ADDRESS;
+				break;
+			case 'S':
+				flags |= FLAG_SPLIT;
+				splitStr = strdup(optarg);
+				if (splitStr == NULL) exit(1);
 				break;
 			case 'r':
 				randomStr = strdup(optarg);
@@ -1281,7 +1282,7 @@ int main(int argc, char **argv)
 	if (geo_setup() == 0 && ((flags & FLAG_SHOW_ALL_INFO) == FLAG_SHOW_ALL_INFO))
 		flags |= FLAG_GET_GEOIP;
 
-	if (hostname && randomStr) {
+	if ((hostname && randomStr) || (hostname && splitStr) || (randomStr && splitStr)) {
 		if (!beSilent)
 			fprintf(stderr,
 				"ipcalc: you cannot mix these options\n");
@@ -1327,6 +1328,14 @@ int main(int argc, char **argv)
 				fprintf(stderr,
 					"ipcalc: cannot generate network with prefix: %u\n",
 					prefix);
+			return 1;
+		}
+	} else if (splitStr) {
+		splitPrefix = str_to_prefix(&familyIPv6, splitStr, 1);
+		if (splitPrefix < 0) {
+			if (!beSilent)
+				fprintf(stderr,
+					"ipcalc: bad %s prefix: %s\n", familyIPv6?"IPv6":"IPv4", splitStr);
 			return 1;
 		}
 	}
@@ -1411,7 +1420,7 @@ int main(int argc, char **argv)
 		colors = 1;
 
 	/* we know what we want to display now, so display it. */
-	if (flags & FLAG_SHOW_INFO) {
+	if (flags & FLAG_SHOW_INFO && !(flags & FLAG_SPLIT)) {
 		unsigned single_host = 0;
 
 		if ((familyIPv6 && info.prefix == 128) ||
@@ -1480,7 +1489,7 @@ int main(int argc, char **argv)
 				dist_printf("Coordinates:\t", "%s\n", info.geoip_coord);
 		}
 
-	} else {
+	} else if (!(flags & FLAG_SHOW_INFO)) {
 
 		if (flags & FLAG_SHOW_NETMASK) {
 			printf("NETMASK=%s\n", info.netmask);
@@ -1550,6 +1559,14 @@ int main(int argc, char **argv)
 			}
 			if (info.geoip_coord)
 				printf("COORDINATES=\"%s\"\n", info.geoip_coord);
+		}
+	}
+
+	if (flags & FLAG_SPLIT) {
+		if (familyIPv6) {
+			show_split_networks_v6(splitPrefix, &info);
+		} else {
+			show_split_networks_v4(splitPrefix, &info);
 		}
 	}
 
