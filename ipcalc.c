@@ -579,7 +579,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		  unsigned flags)
 {
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
-	char namebuf[INET6_ADDRSTRLEN + 1];
+	char namebuf[INET_ADDRSTRLEN + 1];
 	char errBuf[250];
 
 	memset(info, 0, sizeof(*info));
