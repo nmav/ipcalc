@@ -579,7 +579,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		  unsigned flags)
 {
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
-	char namebuf[INET6_ADDRSTRLEN + 1];
+	char namebuf[INET_ADDRSTRLEN + 1];
 	char errBuf[250];
 
 	memset(info, 0, sizeof(*info));
@@ -630,7 +630,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	if (inet_ntop(AF_INET, &ip, namebuf, sizeof(namebuf)) == 0) {
 		if (!beSilent)
 			fprintf(stderr,
-				"ipcalc: error calculating the IPv6 network\n");
+				"ipcalc: error calculating the IPv4 network\n");
 		return -1;
 	}
 	info->ip = strdup(namebuf);
@@ -693,7 +693,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		if (inet_ntop(AF_INET, &maxhost, namebuf, sizeof(namebuf)) == 0) {
 			if (!beSilent)
 				fprintf(stderr,
-					"ipcalc: error calculating the IPv6 network\n");
+					"ipcalc: error calculating the IPv4 network\n");
 			return -1;
 		}
 
