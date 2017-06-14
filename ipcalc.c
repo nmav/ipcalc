@@ -636,7 +636,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 	info->ip = strdup(namebuf);
 
 	netmask.s_addr = prefix2mask(prefix);
-	memset(&namebuf, '\0', sizeof(namebuf));
+	memset(namebuf, '\0', sizeof(namebuf));
 
 	if (inet_ntop(AF_INET, &netmask, namebuf, INET_ADDRSTRLEN) == NULL) {
 		fprintf(stderr, "Memory allocation failure line %d\n",
@@ -648,7 +648,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	broadcast = calc_broadcast(ip, prefix);
 
-	memset(&namebuf, '\0', sizeof(namebuf));
+	memset(namebuf, '\0', sizeof(namebuf));
 	if (inet_ntop(AF_INET, &broadcast, namebuf, INET_ADDRSTRLEN) == NULL) {
 		fprintf(stderr, "Memory allocation failure line %d\n",
 			__LINE__);
@@ -660,7 +660,7 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	info->reverse_dns = calc_reverse_dns4(network, prefix, network, broadcast);
 
-	memset(&namebuf, '\0', sizeof(namebuf));
+	memset(namebuf, '\0', sizeof(namebuf));
 	if (inet_ntop(AF_INET, &network, namebuf, INET_ADDRSTRLEN) == NULL) {
 		fprintf(stderr, "Memory allocation failure line %d\n",
 			__LINE__);
