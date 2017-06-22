@@ -211,8 +211,8 @@ void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info
 		v6add(&start, &sdiff);
 
 		j = 0;
-		for (k = 0; k < 8; k++)
-			if (end.s6_addr16[k] != 0xffff)
+		for (k = 0; k < 16; k+=2)
+			if (end.s6_addr[k] != 0xff && end.s6_addr[k+1] != 0xff)
 				j = 1;
 		if (!j)
 			i = 1;
