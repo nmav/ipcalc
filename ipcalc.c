@@ -1526,7 +1526,7 @@ int main(int argc, char **argv)
 				printf("ADDRSPACE=%s\n", info.type);
 		}
 
-		if ((flags & FLAG_SHOW_ADDRESSES) && info.hosts) {
+		if ((flags & FLAG_SHOW_ADDRESSES) && info.hosts[0]) {
 			if (strchr(info.hosts, ' ') != NULL)
 				printf("ADDRESSES=\"%s\"\n", info.hosts);
 			else
