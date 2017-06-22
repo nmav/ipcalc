@@ -494,7 +494,7 @@ const char *ipv4_net_to_class(struct in_addr net)
 {
 	unsigned byte1 = (ntohl(net.s_addr) >> 24) & 0xff;
 
-	if (byte1 >= 0 && byte1 < 128) {
+	if (byte1 < 128) {
 		return "Class A";
 	}
 
@@ -518,7 +518,7 @@ unsigned default_ipv4_prefix(struct in_addr net)
 {
 	unsigned byte1 = (ntohl(net.s_addr) >> 24) & 0xff;
 
-	if (byte1 >= 0 && byte1 < 128) {
+	if (byte1 < 128) {
 		return 8;
 	}
 
