@@ -59,7 +59,7 @@ static unsigned colors = 0;
   return host byte order, but there are some exceptions.
 */
 
-int safe_atoi(const char *s, int *ret_i)
+static int safe_atoi(const char *s, int *ret_i)
 {
 	char *x = NULL;
 	long l;
@@ -113,7 +113,7 @@ uint32_t prefix2mask(int prefix)
   \return the calculated broadcast address for the network, in network byte
   order.
 */
-struct in_addr calc_broadcast(struct in_addr addr, int prefix)
+static struct in_addr calc_broadcast(struct in_addr addr, int prefix)
 {
 	struct in_addr mask;
 	struct in_addr broadcast;
@@ -134,7 +134,7 @@ struct in_addr calc_broadcast(struct in_addr addr, int prefix)
   \return the base address of the network that addr is associated with, in
   network byte order.
 */
-struct in_addr calc_network(struct in_addr addr, int prefix)
+static struct in_addr calc_network(struct in_addr addr, int prefix)
 {
 	struct in_addr mask;
 	struct in_addr network;
@@ -157,7 +157,7 @@ struct in_addr calc_network(struct in_addr addr, int prefix)
   \return a hostname, or NULL if one cannot be determined.  Hostname is stored
   in an allocated buffer.
 */
-char *get_hostname(int family, void *addr)
+static char *get_hostname(int family, void *addr)
 {
 	static char hostname[NI_MAXHOST];
 	int ret = -1;
@@ -192,7 +192,7 @@ char *get_hostname(int family, void *addr)
   \return an IP address, or NULL if one cannot be determined.  The IP is stored
   in an allocated buffer.
 */
-char *get_ip_address(int family, const char *host)
+static char *get_ip_address(int family, const char *host)
 {
 	struct addrinfo *res, *rp;
 	struct addrinfo hints;
@@ -223,7 +223,7 @@ char *get_ip_address(int family, const char *host)
 	return NULL;
 }
 
-int bit_count(uint32_t i)
+static int bit_count(uint32_t i)
 {
 	int c = 0;
 	unsigned int seen_one = 0;
@@ -271,7 +271,7 @@ int ipv4_mask_to_int(const char *prefix)
 }
 
 /* Returns powers of two in textual format */
-const char *p2_table(unsigned pow)
+static const char *p2_table(unsigned pow)
 {
 	static const char *pow2[] = {
 		"1",
@@ -408,7 +408,7 @@ const char *p2_table(unsigned pow)
 	return "";
 }
 
-const char *ipv4_net_to_type(struct in_addr net)
+static const char *ipv4_net_to_type(struct in_addr net)
 {
 	unsigned byte1 = (ntohl(net.s_addr) >> 24) & 0xff;
 	unsigned byte2 = (ntohl(net.s_addr) >> 16) & 0xff;
@@ -575,6 +575,7 @@ char *ipv6_prefix_to_hosts(char *hosts, unsigned hosts_size, unsigned prefix)
 #define FLAGS_TO_IGNORE (FLAG_GET_GEOIP|FLAG_SPLIT|FLAG_ASSUME_CLASS_PREFIX|(1<<16))
 #define FLAGS_TO_IGNORE_MASK (~FLAGS_TO_IGNORE)
 
+static
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 		  unsigned flags)
 {
@@ -755,7 +756,7 @@ static char *ipv6_mask_to_str(const struct in6_addr *mask)
 	return strdup(buf);
 }
 
-const char *ipv6_net_to_type(struct in6_addr *net, int prefix)
+static const char *ipv6_net_to_type(struct in6_addr *net, int prefix)
 {
 	uint16_t word1 = net->s6_addr[0] << 8 | net->s6_addr[1];
 	uint16_t word2 = net->s6_addr[2] << 8 | net->s6_addr[3];
@@ -836,6 +837,7 @@ char *expand_ipv6(struct in6_addr *ip6)
 	return strdup(buf);
 }
 
+static
 int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 		  unsigned flags)
 {
