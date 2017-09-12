@@ -755,7 +755,7 @@ static char *ipv6_mask_to_str(const struct in6_addr *mask)
 	return strdup(buf);
 }
 
-char *ipv6_net_to_type(struct in6_addr *net, int prefix)
+const char *ipv6_net_to_type(struct in6_addr *net, int prefix)
 {
 	uint16_t word1 = net->s6_addr[0] << 8 | net->s6_addr[1];
 	uint16_t word2 = net->s6_addr[2] << 8 | net->s6_addr[3];
