@@ -142,11 +142,11 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **cit
 		}
 		p = pGeoIP_country_name_by_id(gi, country_id);
 		if (p)
-			*country = strdup(p);
+			*country = safe_strdup(p);
 
 		p = pGeoIP_code_by_id(country_id);
 		if (p)
-			*ccode = strdup(p);
+			*ccode = safe_strdup(p);
 
 		pGeoIP_delete(gi);
 	}
@@ -158,7 +158,7 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **cit
 		gir = pGeoIP_record_by_ipnum(gi, ip.s_addr);
 
 		if (gir && gir->city)
-			*city = strdup(gir->city);
+			*city = safe_strdup(gir->city);
 
 		if (gir && gir->longitude != 0 && gir->longitude != 0)
 			asprintf(coord, "%f,%f", gir->latitude, gir->longitude);
@@ -172,7 +172,7 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **cit
 			gir = pGeoIP_record_by_ipnum(gi, ip.s_addr);
 
 			if (gir && gir->city)
-				*city = strdup(gir->city);
+				*city = safe_strdup(gir->city);
 
 			if (gir && gir->longitude != 0 && gir->longitude != 0)
 				asprintf(coord, "%f,%f", gir->latitude, gir->longitude);
@@ -206,11 +206,11 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **c
 		}
 		p = pGeoIP_country_name_by_id(gi, country_id);
 		if (p)
-			*country = strdup(p);
+			*country = safe_strdup(p);
 
 		p = pGeoIP_code_by_id(country_id);
 		if (p)
-			*ccode = strdup(p);
+			*ccode = safe_strdup(p);
 
 		pGeoIP_delete(gi);
 	}
@@ -222,7 +222,7 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **c
 		gir = pGeoIP_record_by_ipnum_v6(gi, (geoipv6_t)*ip);
 
 		if (gir && gir->city)
-			*city = strdup(gir->city);
+			*city = safe_strdup(gir->city);
 
 		if (gir && gir->longitude != 0 && gir->longitude != 0)
 			asprintf(coord, "%f,%f", gir->latitude, gir->longitude);
@@ -236,7 +236,7 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **c
 			gir = pGeoIP_record_by_ipnum_v6(gi, (geoipv6_t)*ip);
 
 			if (gir && gir->city)
-				*city = strdup(gir->city);
+				*city = safe_strdup(gir->city);
 
 			if (gir && gir->longitude != 0 && gir->longitude != 0)
 				asprintf(coord, "%f,%f", gir->latitude, gir->longitude);
