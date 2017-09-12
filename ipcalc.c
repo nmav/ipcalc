@@ -1015,7 +1015,7 @@ static char *generate_ip_network(int ipv6, unsigned prefix)
 static
 int str_to_prefix(int *ipv6, const char *prefixStr, unsigned fix)
 {
-	int prefix, r;
+	int prefix = -1, r;
 	if (!(*ipv6) && strchr(prefixStr, '.')) {	/* prefix is 255.x.x.x */
 		prefix = ipv4_mask_to_int(prefixStr);
 	} else {
