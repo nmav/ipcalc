@@ -37,6 +37,7 @@
 #include <netdb.h>
 #include <errno.h>
 #include <time.h>		/* clock_gettime */
+#include <limits.h>
 #include "ipcalc.h"
 
 int beSilent = 0;
@@ -1058,45 +1059,6 @@ int str_to_prefix(int *ipv6, const char *prefixStr, unsigned fix)
 	return prefix;
 }
 
-#define OPT_ALLINFO 1
-#define OPT_MINADDR 2
-#define OPT_MAXADDR 3
-#define OPT_ADDRESSES 4
-#define OPT_ADDRSPACE 5
-#define OPT_USAGE 6
-#define OPT_REVERSE 7
-#define OPT_CLASS_PREFIX 8
-
-static const struct option long_options[] = {
-	{"check", 0, 0, 'c'},
-	{"random-private", 1, 0, 'r'},
-	{"split", 1, 0, 'S'},
-	{"info", 0, 0, 'i'},
-	{"all-info", 0, 0, OPT_ALLINFO},
-	{"ipv4", 0, 0, '4'},
-	{"ipv6", 0, 0, '6'},
-	{"broadcast", 0, 0, 'b'},
-	{"hostname", 0, 0, 'h'},
-	{"lookup-host", 1, 0, 'o'},
-	{"reverse-dns", 0, 0, OPT_REVERSE},
-#ifdef USE_GEOIP
-	{"geoinfo", 0, 0, 'g'},
-#endif
-	{"netmask", 0, 0, 'm'},
-	{"network", 0, 0, 'n'},
-	{"prefix", 0, 0, 'p'},
-	{"class-prefix", 0, 0, OPT_CLASS_PREFIX},
-	{"minaddr", 0, 0, OPT_MINADDR},
-	{"maxaddr", 0, 0, OPT_MAXADDR},
-	{"addresses", 0, 0, OPT_ADDRESSES},
-	{"addrspace", 0, 0, OPT_ADDRSPACE},
-	{"silent", 0, 0, 's'},
-	{"version", 0, 0, 'v'},
-	{"help", 0, 0, '?'},
-	{"usage", 0, 0, OPT_USAGE},
-	{NULL, 0, 0, 0}
-};
-
 static
 void usage(unsigned verbose)
 {
@@ -1141,7 +1103,12 @@ void usage(unsigned verbose)
 	} else {
 		fprintf(stderr, "Usage: ipcalc [-46sv?] [-c|--check] [-r|--random-private=STRING] [-i|--info]\n");
 		fprintf(stderr, "        [--all-info] [-4|--ipv4] [-6|--ipv6] [-b|--broadcast]\n");
-		fprintf(stderr, "        [-h|--hostname] [-o|--lookup-host=STRING] [-g|--geoinfo]\n");
+		fprintf(stderr, "        [-h|--hostname] [-o|--lookup-host=STRING]");
+#ifdef USE_GEOIP
+		fprintf(stderr, " [-g|--geoinfo]\n");
+#else
+		fprintf(stderr, "\n");
+#endif
 		fprintf(stderr, "        [-m|--netmask] [-n|--network] [-p|--prefix] [--minaddr] [--maxaddr]\n");
 		fprintf(stderr, "        [--addresses] [--addrspace] [-s|--silent] [-v|--version]\n");
 		fprintf(stderr, "        [--reverse-dns] [--class-prefix]\n");
@@ -1175,30 +1142,51 @@ color_printf(const char *color, const char *title, const char *fmt, ...)
 	return;
 }
 
-/*!
-  \fn main(int argc, const char **argv)
-  \brief wrapper program for ipcalc functions.
-
-  This is a wrapper program for the functions that the ipcalc library provides.
-  It can be used from shell scripts or directly from the command line.
-
-  For more information, please see the ipcalc(1) man page.
-*/
-int main(int argc, char **argv)
+static unsigned parse_args(int argc, char **argv, char **splitStr,
+			   char **randomStr, int *familyIPv4, int *familyIPv6,
+			   char **hostname)
 {
-	int doCheck = 0;
-	int familyIPv4 = 0, familyIPv6 = 0;
-	char *randomStr = NULL;
-	char *hostname = NULL;
-	char *splitStr = NULL;
-	int doVersion = 0;
-	char *ipStr = NULL, *prefixStr = NULL, *netmaskStr = NULL, *chptr = NULL;
-	int prefix = -1, splitPrefix = -1;
-	ip_info_st info = { 0 };
-	unsigned flags = 0;
-	int r = 0;
 	int c;
-
+	unsigned flags = 0;
+	enum {
+		OPT_ALLINFO = CHAR_MAX + 1,
+		OPT_REVERSE,
+		OPT_CLASS_PREFIX,
+		OPT_MINADDR,
+		OPT_MAXADDR,
+		OPT_ADDRESSES,
+		OPT_ADDRSPACE,
+		OPT_USAGE
+	};
+	static const struct option long_options[] = {
+		{ "check",		no_argument,		NULL, 'c'		},
+		{ "random-private",	required_argument,	NULL, 'r'		},
+		{ "split",		required_argument,	NULL, 'S'		},
+		{ "info",		no_argument,		NULL, 'i'		},
+		{ "all-info",		no_argument,		NULL, OPT_ALLINFO	},
+		{ "ipv4",		no_argument,		NULL, '4'		},
+		{ "ipv6",		no_argument,		NULL, '6'		},
+		{ "broadcast",		no_argument,		NULL, 'b'		},
+		{ "hostname",		no_argument,		NULL, 'h'		},
+		{ "lookup-host",	required_argument,	NULL, 'o'		},
+		{ "reverse-dns",	no_argument,		NULL, OPT_REVERSE	},
+#ifdef USE_GEOIP
+		{ "geoinfo",		no_argument,		NULL, 'g'		},
+#endif
+		{ "netmask",		no_argument,		NULL, 'm'		},
+		{ "network",		no_argument,		NULL, 'n'		},
+		{ "prefix",		no_argument,		NULL, 'p'		},
+		{ "class-prefix",	no_argument,		NULL, OPT_CLASS_PREFIX	},
+		{ "minaddr",		no_argument,		NULL, OPT_MINADDR	},
+		{ "maxaddr",		no_argument,		NULL, OPT_MAXADDR	},
+		{ "addresses",		no_argument,		NULL, OPT_ADDRESSES	},
+		{ "addrspace",		no_argument,		NULL, OPT_ADDRSPACE	},
+		{ "silent",		no_argument,		NULL, 's'		},
+		{ "version",		no_argument,		NULL, 'v'		},
+		{ "help",		no_argument,		NULL, '?'		},
+		{ "usage",		no_argument,		NULL, OPT_USAGE		},
+		{ NULL, 0, NULL, 0 }
+	};
 	while (1) {
 		c = getopt_long(argc, argv, "S:cr:i46bho:gmnpsv", long_options, NULL);
 		if (c == -1)
@@ -1207,15 +1195,13 @@ int main(int argc, char **argv)
 		switch(c) {
 			case 'c':
 				flags |= FLAG_CHECK_ADDRESS;
-				break;
+			break;
 			case 'S':
 				flags |= FLAG_SPLIT;
-				splitStr = safe_strdup(optarg);
-				if (splitStr == NULL) exit(1);
+				*splitStr = safe_strdup(optarg);
 				break;
 			case 'r':
-				randomStr = safe_strdup(optarg);
-				if (randomStr == NULL) exit(1);
+				*randomStr = safe_strdup(optarg);
 				break;
 			case 'i':
 				flags |= FLAG_SHOW_INFO;
@@ -1230,10 +1216,10 @@ int main(int argc, char **argv)
 				flags |= FLAG_SHOW_REVERSE;
 				break;
 			case '4':
-				familyIPv4 = 1;
+				*familyIPv4 = 1;
 				break;
 			case '6':
-				familyIPv6 = 1;
+				*familyIPv6 = 1;
 				break;
 			case 'b':
 				flags |= FLAG_SHOW_BROADCAST;
@@ -1242,12 +1228,13 @@ int main(int argc, char **argv)
 				flags |= FLAG_RESOLVE_HOST;
 				break;
 			case 'o':
-				hostname = safe_strdup(optarg);
-				if (hostname == NULL) exit(1);
+				*hostname = safe_strdup(optarg);
 				break;
+#ifdef USE_GEOIP
 			case 'g':
 				flags |= FLAG_SHOW_GEOIP;
 				break;
+#endif
 			case 'm':
 				flags |= FLAG_SHOW_NETMASK;
 				break;
@@ -1273,7 +1260,8 @@ int main(int argc, char **argv)
 				beSilent = 1;
 				break;
 			case 'v':
-				doVersion = 1;
+				printf("ipcalc %s\n", VERSION);
+				exit(0);
 				break;
 			case OPT_USAGE:
 				usage(0);
@@ -1284,16 +1272,37 @@ int main(int argc, char **argv)
 				exit(0);
 		}
 	}
+	return flags;
+}
 
+/*!
+  \fn main(int argc, const char **argv)
+  \brief wrapper program for ipcalc functions.
+
+  This is a wrapper program for the functions that the ipcalc library provides.
+  It can be used from shell scripts or directly from the command line.
+
+  For more information, please see the ipcalc(1) man page.
+*/
+int main(int argc, char **argv)
+{
+	int doCheck = 0;
+	int familyIPv4 = 0, familyIPv6 = 0;
+	char *randomStr = NULL;
+	char *hostname = NULL;
+	char *splitStr = NULL;
+	char *ipStr = NULL, *prefixStr = NULL, *netmaskStr = NULL, *chptr = NULL;
+	int prefix = -1, splitPrefix = -1;
+	ip_info_st info = { 0 };
+	unsigned flags = 0;
+	int r = 0;
+
+	flags = parse_args(argc, argv, &splitStr, &randomStr, &familyIPv4,
+			   &familyIPv6, &hostname);
 	if (optind < argc) {
 		ipStr = argv[optind++];
 		if (optind < argc)
 			chptr = argv[optind++];
-	}
-
-	if (doVersion) {
-		printf("ipcalc %s\n", VERSION);
-		return 0;
 	}
 
 	if (familyIPv6 && familyIPv4) {
