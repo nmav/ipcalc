@@ -968,9 +968,10 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	return 0;
 }
 
-static int randomize(void *ptr, unsigned size)
+static int randomize(void *ptr, ssize_t size)
 {
-	int fd, ret;
+	int fd;
+	ssize_t ret;
 
 	fd = open("/dev/urandom", O_RDONLY);
 	if (fd < 0)
