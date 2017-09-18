@@ -118,8 +118,6 @@ extern char __attribute__((warn_unused_result)) *safe_strdup(const char *str)
 */
 uint32_t prefix2mask(int prefix)
 {
-	struct in_addr mask;
-	memset(&mask, 0, sizeof(mask));
 	if (prefix) {
 		return htonl(~((1 << (32 - prefix)) - 1));
 	} else {
