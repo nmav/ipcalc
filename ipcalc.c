@@ -1196,7 +1196,7 @@ int main(int argc, char **argv)
 	int doVersion = 0;
 	char *ipStr = NULL, *prefixStr = NULL, *netmaskStr = NULL, *chptr = NULL;
 	int prefix = -1, splitPrefix = -1;
-	ip_info_st info;
+	ip_info_st info = { 0 };
 	unsigned flags = 0;
 	int r = 0;
 	int c;
@@ -1597,6 +1597,20 @@ int main(int argc, char **argv)
 			show_split_networks_v4(splitPrefix, &info);
 		}
 	}
+
+	/* clean up */
+	free(info.broadcast);
+	free(info.expanded_ip);
+	free(info.expanded_network);
+	free(info.hostmax);
+	if (info.hostmax != info.hostmin)
+		free(info.hostmin);
+	free(info.ip);
+	free(info.netmask);
+	if (info.hostmax != info.network)
+		free(info.network);
+	free(info.reverse_dns);
+	free(splitStr);
 
 	return 0;
 }
