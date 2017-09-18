@@ -599,7 +599,7 @@ char *ipv6_prefix_to_hosts(char *hosts, unsigned hosts_size, unsigned prefix)
 #define FLAGS_TO_IGNORE_MASK (~FLAGS_TO_IGNORE)
 
 static
-int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
+int get_ipv4_info(char *ipStr, int prefix, ip_info_st * info,
 		  unsigned flags)
 {
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
@@ -1279,6 +1279,7 @@ int main(int argc, char **argv)
 				usage(0);
 				exit(0);
 			case '?':
+			default:
 				usage(1);
 				exit(0);
 		}
