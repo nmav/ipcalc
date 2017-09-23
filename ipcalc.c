@@ -169,37 +169,41 @@ static struct in_addr calc_network(struct in_addr addr, int prefix)
 }
 
 /*!
-  \fn const char *get_hostname(int family, void *addr)
+  \fn const char *get_hostname(const struct ipcalc_control *ctl, void *addr, const char *ipStr)
   \brief returns the hostname associated with the specified IP address
 
-  \param family the address family, either AF_INET or AF_INET6.
+  \param ctl contains the address family, either AF_INET or AF_INET6.
   \param addr an IP address to find a hostname for, in network byte order,
   should either be a pointer to a struct in_addr or a struct in6_addr.
 
   \return a hostname, or NULL if one cannot be determined.  Hostname is stored
   in an allocated buffer.
 */
-static char *get_hostname(int family, void *addr)
+static char *get_hostname(const struct ipcalc_control *ctl, void *addr, const char *ipStr)
 {
 	static char hostname[NI_MAXHOST];
 	int ret = -1;
 	struct sockaddr_in addr4;
 	struct sockaddr_in6 addr6;
 
-	if (family == AF_INET) {
+	if (ctl->family == AF_INET) {
 		memset(&addr4, 0, sizeof(addr4));
 		addr4.sin_family = AF_INET;
 		memcpy(&addr4.sin_addr, addr, sizeof(struct in_addr));
 		ret = getnameinfo((struct sockaddr*)&addr4, sizeof(addr4), hostname, sizeof(hostname), NULL, 0, 0);
-	} else if (family == AF_INET6) {
+	} else if (ctl->family == AF_INET6) {
 		memset(&addr6, 0, sizeof(addr6));
 		addr6.sin6_family = AF_INET6;
 		memcpy(&addr6.sin6_addr, addr, sizeof(struct in6_addr));
 		ret = getnameinfo((struct sockaddr*)&addr6, sizeof(addr6), hostname, sizeof(hostname), NULL, 0, 0);
 	}
 
-	if (ret != 0)
+	if (ret != 0) {
+		if (!ctl->beSilent) {
+			error(0, 0, "cannot find hostname for %s: %s", ipStr, gai_strerror(ret));
+		}
 		return NULL;
+	}
 
 	return safe_strdup(hostname);
 }
@@ -580,7 +584,6 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 {
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
 	char namebuf[INET_ADDRSTRLEN + 1];
-	char errBuf[250];
 
 	memset(info, 0, sizeof(*info));
 
@@ -704,12 +707,8 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 #endif
 
 	if (ctl->resolve_host) {
-		info->hostname = get_hostname(AF_INET, &ip);
+		info->hostname = get_hostname(ctl, &ip, ipStr);
 		if (info->hostname == NULL) {
-			if (!ctl->beSilent) {
-				error(0, 0, "cannot find hostname for %s", ipStr);
-				herror(errBuf);
-			}
 			return -1;
 		}
 	}
@@ -916,12 +915,8 @@ int get_ipv6_info(struct ipcalc_control *ctl, const char *ipStr,
 #endif
 
 	if (ctl->resolve_host) {
-		info->hostname = get_hostname(AF_INET6, &ip6);
+		info->hostname = get_hostname(ctl, &ip6, ipStr);
 		if (info->hostname == NULL) {
-			if (!ctl->beSilent) {
-				error(0, 0, "cannot find hostname for %s", ipStr);
-				herror(errBuf);
-			}
 			return -1;
 		}
 	}
