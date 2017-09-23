@@ -40,9 +40,6 @@
 #include <limits.h>
 #include "ipcalc.h"
 
-int beSilent = 0;
-static unsigned colors = 0;
-
 /*!
   \file ipcalc.c
   \brief provides utilities for manipulating IP addresses.
@@ -207,7 +204,7 @@ static char *get_hostname(int family, void *addr)
 }
 
 /*!
-  \fn const char *get_ip_address(int family, void *addr)
+  \fn const char *get_ip_address(const struct ipcalc_control *ctl)
   \brief returns the IP address associated with the specified hostname
 
   \param family the requested address family or AF_UNSPEC for any
@@ -216,7 +213,7 @@ static char *get_hostname(int family, void *addr)
   \return an IP address, or NULL if one cannot be determined.  The IP is stored
   in an allocated buffer.
 */
-static char *get_ip_address(int family, const char *host)
+static char *get_ip_address(const struct ipcalc_control *ctl)
 {
 	struct addrinfo *res, *rp;
 	struct addrinfo hints;
@@ -225,9 +222,9 @@ static char *get_ip_address(int family, const char *host)
 	void *addr;
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = family;
+	hints.ai_family = ctl->family;
 
-	err = getaddrinfo(host, NULL, &hints, &res);
+	err = getaddrinfo(ctl->hostname, NULL, &hints, &res);
 	if (err != 0)
 		return NULL;
 
@@ -600,8 +597,8 @@ char *ipv6_prefix_to_hosts(char *hosts, unsigned hosts_size, unsigned prefix)
 #define FLAGS_TO_IGNORE_MASK (~FLAGS_TO_IGNORE)
 
 static
-int get_ipv4_info(char *ipStr, int prefix, ip_info_st * info,
-		  unsigned flags)
+int get_ipv4_info(const struct ipcalc_control *ctl, char *ipStr, int prefix,
+		  ip_info_st *info)
 {
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
 	char namebuf[INET_ADDRSTRLEN + 1];
@@ -610,7 +607,7 @@ int get_ipv4_info(char *ipStr, int prefix, ip_info_st * info,
 	memset(info, 0, sizeof(*info));
 
 	if (inet_pton(AF_INET, ipStr, &ip) <= 0) {
-		if (!beSilent)
+		if (!ctl->beSilent)
 			fprintf(stderr, "ipcalc: bad IPv4 address: %s\n",
 				ipStr);
 		return -1;
@@ -640,20 +637,20 @@ int get_ipv4_info(char *ipStr, int prefix, ip_info_st * info,
 			ipStr = tmp;
 		}
 	} else { /* assume good old days classful Internet */
-		if (flags & FLAG_ASSUME_CLASS_PREFIX)
+		if (ctl->flags & FLAG_ASSUME_CLASS_PREFIX)
 			prefix = default_ipv4_prefix(ip);
 		else
 			prefix = 32;
 	}
 
 	if (prefix > 32) {
-		if (!beSilent)
+		if (!ctl->beSilent)
 			fprintf(stderr, "ipcalc: bad IPv4 prefix %d\n", prefix);
 		return -1;
 	}
 
 	if (inet_ntop(AF_INET, &ip, namebuf, sizeof(namebuf)) == 0) {
-		if (!beSilent)
+		if (!ctl->beSilent)
 			fprintf(stderr,
 				"ipcalc: error calculating the IPv4 network\n");
 		return -1;
@@ -716,7 +713,7 @@ int get_ipv4_info(char *ipStr, int prefix, ip_info_st * info,
 			maxhost.s_addr = htonl(ntohl(maxhost.s_addr) - 1);
 		}
 		if (inet_ntop(AF_INET, &maxhost, namebuf, sizeof(namebuf)) == 0) {
-			if (!beSilent)
+			if (!ctl->beSilent)
 				fprintf(stderr,
 					"ipcalc: error calculating the IPv4 network\n");
 			return -1;
@@ -730,13 +727,14 @@ int get_ipv4_info(char *ipStr, int prefix, ip_info_st * info,
 
 	ipv4_prefix_to_hosts(info->hosts, sizeof(info->hosts), prefix);
 
-	if (flags & FLAG_GET_GEOIP)
-		geo_ipv4_lookup(ip, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
+	if (ctl->flags & FLAG_GET_GEOIP) {
+		geo_ipv4_lookup(ctl, ip, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
+	}
 
-	if (flags & FLAG_RESOLVE_HOST) {
+	if (ctl->flags & FLAG_RESOLVE_HOST) {
 		info->hostname = get_hostname(AF_INET, &ip);
 		if (info->hostname == NULL) {
-			if (!beSilent) {
+			if (!ctl->beSilent) {
 				sprintf(errBuf,
 					"ipcalc: cannot find hostname for %s",
 					ipStr);
@@ -862,8 +860,8 @@ char *expand_ipv6(struct in6_addr *ip6)
 }
 
 static
-int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
-		  unsigned flags)
+int get_ipv6_info(const struct ipcalc_control *ctl, const char *ipStr,
+		  int prefix, ip_info_st *info)
 {
 	struct in6_addr ip6, mask, network;
 	char errBuf[250];
@@ -872,7 +870,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	memset(info, 0, sizeof(*info));
 
 	if (inet_pton(AF_INET6, ipStr, &ip6) <= 0) {
-		if (!beSilent)
+		if (!ctl->beSilent)
 			fprintf(stderr, "ipcalc: bad IPv6 address: %s\n",
 				ipStr);
 		return -1;
@@ -882,7 +880,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	info->expanded_ip = expand_ipv6(&ip6);
 
 	if (inet_ntop(AF_INET6, &ip6, errBuf, sizeof(errBuf)) == 0) {
-		if (!beSilent)
+		if (!ctl->beSilent)
 			fprintf(stderr,
 				"ipcalc: error calculating the IPv6 network\n");
 		return -1;
@@ -891,7 +889,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	info->ip = safe_strdup(errBuf);
 
 	if (prefix > 128) {
-		if (!beSilent)
+		if (!ctl->beSilent)
 			fprintf(stderr, "ipcalc: bad IPv6 prefix: %d\n",
 				prefix);
 		return -1;
@@ -902,7 +900,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	info->prefix = prefix;
 
 	if (ipv6_prefix_to_mask(prefix, &mask) == -1) {
-		if (!beSilent)
+		if (!ctl->beSilent)
 			fprintf(stderr,
 				"ipcalc: error converting IPv6 prefix: %d\n",
 				prefix);
@@ -915,7 +913,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 		network.s6_addr[i] = ip6.s6_addr[i] & mask.s6_addr[i];
 
 	if (inet_ntop(AF_INET6, &network, errBuf, sizeof(errBuf)) == 0) {
-		if (!beSilent)
+		if (!ctl->beSilent)
 			fprintf(stderr,
 				"ipcalc: error calculating the IPv6 network\n");
 		return -1;
@@ -934,7 +932,7 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 		for (i = 0; i < sizeof(struct in6_addr); i++)
 			network.s6_addr[i] |= ~mask.s6_addr[i];
 		if (inet_ntop(AF_INET6, &network, errBuf, sizeof(errBuf)) == 0) {
-			if (!beSilent)
+			if (!ctl->beSilent)
 				fprintf(stderr,
 					"ipcalc: error calculating the IPv6 network\n");
 			return -1;
@@ -949,13 +947,14 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	ipv6_prefix_to_hosts(info->hosts, sizeof(info->hosts), prefix);
 
 
-	if (flags & FLAG_GET_GEOIP)
-		geo_ipv6_lookup(&ip6, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
+	if (ctl->flags & FLAG_GET_GEOIP) {
+		geo_ipv6_lookup(ctl, &ip6, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
+	}
 
-	if (flags & FLAG_RESOLVE_HOST) {
+	if (ctl->flags & FLAG_RESOLVE_HOST) {
 		info->hostname = get_hostname(AF_INET6, &ip6);
 		if (info->hostname == NULL) {
-			if (!beSilent) {
+			if (!ctl->beSilent) {
 				sprintf(errBuf,
 					"ipcalc: cannot find hostname for %s",
 					ipStr);
@@ -986,7 +985,7 @@ static int randomize(void *ptr, ssize_t size)
 	return 0;
 }
 
-static char *generate_ip_network(int ipv6, unsigned prefix)
+static char *generate_ip_network(const struct ipcalc_control *ctl, unsigned prefix)
 {
 	struct timespec ts;
 	char ipbuf[64];
@@ -995,7 +994,7 @@ static char *generate_ip_network(int ipv6, unsigned prefix)
 	if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) < 0)
 		return NULL;
 
-	if (ipv6) {
+	if (ctl->family == AF_INET6) {
 		struct in6_addr net;
 
 		net.s6_addr[0] = 0xfc;
@@ -1038,10 +1037,10 @@ static char *generate_ip_network(int ipv6, unsigned prefix)
 }
 
 static
-int str_to_prefix(int *ipv6, const char *prefixStr, unsigned fix)
+int str_to_prefix(struct ipcalc_control *ctl, const char *prefixStr, unsigned fix)
 {
 	int prefix = -1, r;
-	if (!(*ipv6) && strchr(prefixStr, '.')) {	/* prefix is 255.x.x.x */
+	if (ctl->family == AF_INET && strchr(prefixStr, '.')) {	/* prefix is 255.x.x.x */
 		prefix = ipv4_mask_to_int(prefixStr);
 	} else {
 		r = safe_atoi(prefixStr, &prefix);
@@ -1050,10 +1049,10 @@ int str_to_prefix(int *ipv6, const char *prefixStr, unsigned fix)
 		}
 	}
 
-	if (fix && (prefix > 32 && !(*ipv6)))
-		*ipv6 = 1;
+	if (fix && (prefix > 32))
+		ctl->family = AF_INET6;
 
-	if (prefix < 0 || (((*ipv6) && prefix > 128) || (!(*ipv6) && prefix > 32))) {
+	if (prefix < 0 || ((ctl->family == AF_INET && prefix > 32) || prefix > 128)) {
 		return -1;
 	}
 	return prefix;
@@ -1117,8 +1116,8 @@ void usage(unsigned verbose)
 }
 
 void
-__attribute__ ((format(printf, 3, 4)))
-color_printf(const char *color, const char *title, const char *fmt, ...)
+__attribute__ ((format(printf, 4, 5)))
+color_printf(const struct ipcalc_control *ctl, const char *color, const char *title, const char *fmt, ...)
 {
 	va_list args;
 	int ret;
@@ -1132,22 +1131,19 @@ color_printf(const char *color, const char *title, const char *fmt, ...)
 		return;
 
 	fputs(title, stdout);
-	if (colors)
+	if (ctl->colors)
 		fputs(color, stdout);
 
 	fputs(str, stdout);
-	if (colors)
+	if (ctl->colors)
 		fputs(KRESET, stdout);
 	free(str);
 	return;
 }
 
-static unsigned parse_args(int argc, char **argv, char **splitStr,
-			   char **randomStr, int *familyIPv4, int *familyIPv6,
-			   char **hostname)
+static void parse_args(struct ipcalc_control *ctl, int argc, char **argv)
 {
 	int c;
-	unsigned flags = 0;
 	enum {
 		OPT_ALLINFO = CHAR_MAX + 1,
 		OPT_REVERSE,
@@ -1194,70 +1190,76 @@ static unsigned parse_args(int argc, char **argv, char **splitStr,
 
 		switch(c) {
 			case 'c':
-				flags |= FLAG_CHECK_ADDRESS;
+				ctl->flags |= FLAG_CHECK_ADDRESS;
 			break;
 			case 'S':
-				flags |= FLAG_SPLIT;
-				*splitStr = safe_strdup(optarg);
+				ctl->flags |= FLAG_SPLIT;
+				ctl->splitStr = safe_strdup(optarg);
 				break;
 			case 'r':
-				*randomStr = safe_strdup(optarg);
+				ctl->randomStr = safe_strdup(optarg);
 				break;
 			case 'i':
-				flags |= FLAG_SHOW_INFO;
+				ctl->flags |= FLAG_SHOW_INFO;
 				break;
 			case OPT_ALLINFO:
-				flags |= FLAG_SHOW_ALL_INFO;
+				ctl->flags |= FLAG_SHOW_ALL_INFO;
 				break;
 			case OPT_CLASS_PREFIX:
-				flags |= FLAG_ASSUME_CLASS_PREFIX;
+				ctl->flags |= FLAG_ASSUME_CLASS_PREFIX;
 				break;
 			case OPT_REVERSE:
-				flags |= FLAG_SHOW_REVERSE;
+				ctl->flags |= FLAG_SHOW_REVERSE;
 				break;
 			case '4':
-				*familyIPv4 = 1;
-				break;
 			case '6':
-				*familyIPv6 = 1;
+				if (ctl->family != AF_UNSPEC && !ctl->beSilent) {
+					fprintf(stderr,
+						"ipcalc: you cannot specify both IPv4 and IPv6\n");
+					exit(1);
+				}
+				if (c == '4')
+					ctl->family = AF_INET;
+				else
+					ctl->family = AF_INET6;
 				break;
 			case 'b':
-				flags |= FLAG_SHOW_BROADCAST;
+				ctl->flags |= FLAG_SHOW_BROADCAST;
 				break;
 			case 'h':
-				flags |= FLAG_RESOLVE_HOST;
+				ctl->flags |= FLAG_RESOLVE_HOST;
 				break;
 			case 'o':
-				*hostname = safe_strdup(optarg);
+				ctl->hostname = safe_strdup(optarg);
 				break;
 #ifdef USE_GEOIP
 			case 'g':
-				flags |= FLAG_SHOW_GEOIP;
+				ctl->flags |= FLAG_SHOW_GEOIP;
 				break;
 #endif
 			case 'm':
-				flags |= FLAG_SHOW_NETMASK;
+				ctl->flags |= FLAG_SHOW_NETMASK;
 				break;
 			case 'n':
-				flags |= FLAG_SHOW_NETWORK;
+				ctl->flags |= FLAG_SHOW_NETWORK;
 				break;
 			case 'p':
-				flags |= FLAG_SHOW_PREFIX;
+				ctl->flags |= FLAG_SHOW_PREFIX;
 				break;
 			case OPT_MINADDR:
-				flags |= FLAG_SHOW_MINADDR;
+				ctl->flags |= FLAG_SHOW_MINADDR;
 				break;
 			case OPT_MAXADDR:
-				flags |= FLAG_SHOW_MAXADDR;
+				ctl->flags |= FLAG_SHOW_MAXADDR;
 				break;
 			case OPT_ADDRESSES:
-				flags |= FLAG_SHOW_ADDRESSES;
+				ctl->flags |= FLAG_SHOW_ADDRESSES;
 				break;
 			case OPT_ADDRSPACE:
-				flags |= FLAG_SHOW_ADDRSPACE;
+				ctl->flags |= FLAG_SHOW_ADDRSPACE;
 				break;
 			case 's':
-				beSilent = 1;
+				ctl->beSilent = 1;
 				break;
 			case 'v':
 				printf("ipcalc %s\n", VERSION);
@@ -1272,7 +1274,7 @@ static unsigned parse_args(int argc, char **argv, char **splitStr,
 				exit(0);
 		}
 	}
-	return flags;
+	return;
 }
 
 /*!
@@ -1286,47 +1288,37 @@ static unsigned parse_args(int argc, char **argv, char **splitStr,
 */
 int main(int argc, char **argv)
 {
+	struct ipcalc_control ctl = { .family = AF_UNSPEC,  0 };
 	int doCheck = 0;
-	int familyIPv4 = 0, familyIPv6 = 0;
-	char *randomStr = NULL;
-	char *hostname = NULL;
-	char *splitStr = NULL;
 	char *ipStr = NULL, *prefixStr = NULL, *netmaskStr = NULL, *chptr = NULL;
 	int prefix = -1, splitPrefix = -1;
 	ip_info_st info = { 0 };
-	unsigned flags = 0;
 	int r = 0;
 
-	flags = parse_args(argc, argv, &splitStr, &randomStr, &familyIPv4,
-			   &familyIPv6, &hostname);
+	parse_args(&ctl, argc, argv);
 	if (optind < argc) {
 		ipStr = argv[optind++];
 		if (optind < argc)
 			chptr = argv[optind++];
 	}
 
-	if (familyIPv6 && familyIPv4) {
-		if (!beSilent)
-			fprintf(stderr,
-				"ipcalc: you cannot specify both IPv4 and IPv6\n");
-		return 1;
-	}
+	if (ctl.hostname)
+		ctl.flags |= FLAG_RESOLVE_IP;
 
-	if (hostname)
-		flags |= FLAG_RESOLVE_IP;
+	if (geo_setup(&ctl) == 0 && ((ctl.flags & FLAG_SHOW_ALL_INFO) == FLAG_SHOW_ALL_INFO))
+		ctl.flags |= FLAG_GET_GEOIP;
 
-	if (geo_setup() == 0 && ((flags & FLAG_SHOW_ALL_INFO) == FLAG_SHOW_ALL_INFO))
-		flags |= FLAG_GET_GEOIP;
-
-	if ((hostname && randomStr) || (hostname && splitStr) || (randomStr && splitStr)) {
-		if (!beSilent)
+	if ((ctl.hostname && ctl.randomStr) ||
+	    (ctl.hostname && ctl.splitStr) ||
+	    (ctl.randomStr && ctl.splitStr)) {
+		if (!ctl.beSilent)
 			fprintf(stderr,
 				"ipcalc: you cannot mix these options\n");
 		return 1;
 	}
 
-	if (hostname == NULL && randomStr == NULL && !ipStr) {
-		if (!beSilent) {
+	if (ctl.hostname == NULL && ctl.randomStr == NULL && !ipStr) {
+		if (!ctl.beSilent) {
 			fprintf(stderr,
 				"ipcalc: ip address expected\n");
 			usage(1);
@@ -1335,43 +1327,37 @@ int main(int argc, char **argv)
 	}
 
 	/* resolve IP address if a hostname was given */
-	if (hostname) {
-		int family = AF_UNSPEC;
-		if (familyIPv6)
-			family = AF_INET6;
-		else if (familyIPv4)
-			family = AF_INET;
-
-		ipStr = get_ip_address(family, hostname);
+	if (ctl.hostname) {
+		ipStr = get_ip_address(&ctl);
 		if (ipStr == NULL) {
-			if (!beSilent)
+			if (!ctl.beSilent)
 				fprintf(stderr,
-					"ipcalc: could not resolve %s\n", hostname);
+					"ipcalc: could not resolve %s\n", ctl.hostname);
 			return 1;
 		}
-	} else if (randomStr) { /* generate a random private network if asked */
-		prefix = str_to_prefix(&familyIPv6, randomStr, 1);
+	} else if (ctl.randomStr) { /* generate a random private network if asked */
+		prefix = str_to_prefix(&ctl, ctl.randomStr, 1);
 		if (prefix < 0) {
-			if (!beSilent)
+			if (!ctl.beSilent)
 				fprintf(stderr,
-					"ipcalc: bad %s prefix: %s\n", familyIPv6?"IPv6":"IPv4", randomStr);
+					"ipcalc: bad %s prefix: %s\n", ctl.family == AF_INET6 ? "IPv6" : "IPv4", ctl.randomStr);
 			return 1;
 		}
 
-		ipStr = generate_ip_network(familyIPv6, prefix);
+		ipStr = generate_ip_network(&ctl, prefix);
 		if (ipStr == NULL) {
-			if (!beSilent)
+			if (!ctl.beSilent)
 				fprintf(stderr,
 					"ipcalc: cannot generate network with prefix: %u\n",
 					prefix);
 			return 1;
 		}
-	} else if (splitStr) {
-		splitPrefix = str_to_prefix(&familyIPv6, splitStr, 1);
+	} else if (ctl.splitStr) {
+		splitPrefix = str_to_prefix(&ctl, ctl.splitStr, 1);
 		if (splitPrefix < 0) {
-			if (!beSilent)
+			if (!ctl.beSilent)
 				fprintf(stderr,
-					"ipcalc: bad %s prefix: %s\n", familyIPv6?"IPv6":"IPv4", splitStr);
+					"ipcalc: bad %s prefix: %s\n", ctl.family == AF_INET6 ? "IPv6" : "IPv4", ctl.splitStr);
 			return 1;
 		}
 	}
@@ -1381,15 +1367,19 @@ int main(int argc, char **argv)
 	 * that the tool can be used to check for a valid IPv4 or IPv6
 	 * address.
 	 */
-	if (familyIPv4 == 0 && strchr(ipStr, ':') != NULL) {
-		familyIPv6 = 1;
+	if (ctl.family == AF_UNSPEC) {
+		if (strchr(ipStr, ':') != NULL) {
+			ctl.family = AF_INET6;
+		} else if (ctl.family == AF_UNSPEC) {
+			ctl.family = AF_INET;
+		}
 	}
 
 	if (chptr) {
-		if (familyIPv6 == 0) {
+		if (ctl.family == AF_INET) {
 			prefixStr = chptr;
 		} else {
-			if (!beSilent) {
+			if (!ctl.beSilent) {
 				fprintf(stderr, "ipcalc: unexpected argument: %s\n",
 					chptr);
 				usage(1);
@@ -1405,21 +1395,21 @@ int main(int argc, char **argv)
 	}
 
 	if (prefixStr != NULL) {
-		prefix = str_to_prefix(&familyIPv6, prefixStr, 0);
+		prefix = str_to_prefix(&ctl, prefixStr, 0);
 		if (prefix < 0) {
-			if (!beSilent)
+			if (!ctl.beSilent)
 				fprintf(stderr,
-					"ipcalc: bad %s prefix: %s\n", familyIPv6?"IPv6":"IPv4", prefixStr);
+					"ipcalc: bad %s prefix: %s\n", ctl.family == AF_INET6 ? "IPv6" : "IPv4", prefixStr);
 			return 1;
 		}
 	}
 
-	if (familyIPv6) {
-		r = get_ipv6_info(ipStr, prefix, &info, flags);
+	if (ctl.family == AF_INET6) {
+		r = get_ipv6_info(&ctl, ipStr, prefix, &info);
 	} else {
-		if ((flags & FLAG_SHOW_BROADCAST) || (flags & FLAG_SHOW_NETWORK) || (flags & FLAG_SHOW_PREFIX)) {
+		if ((ctl.flags & FLAG_SHOW_BROADCAST) || (ctl.flags & FLAG_SHOW_NETWORK) || (ctl.flags & FLAG_SHOW_PREFIX)) {
 			if (netmaskStr && prefix >= 0) {
-				if (!beSilent) {
+				if (!ctl.beSilent) {
 					fprintf(stderr,
 						"ipcalc: both netmask and prefix specified\n");
 					usage(1);
@@ -1431,13 +1421,13 @@ int main(int argc, char **argv)
 		if (prefix == -1 && netmaskStr) {
 			prefix = ipv4_mask_to_int(netmaskStr);
 			if (prefix < 0) {
-				if (!beSilent)
+				if (!ctl.beSilent)
 					fprintf(stderr,
 						"ipcalc: bad IPv4 prefix: %s\n", prefixStr);
 				return 1;
 			}
 		}
-		r = get_ipv4_info(ipStr, prefix, &info, flags);
+		r = get_ipv4_info(&ctl, ipStr, prefix, &info);
 	}
 
 	if (r < 0) {
@@ -1448,136 +1438,136 @@ int main(int argc, char **argv)
 		return 0;
 
 	/* if no option is given, print information on IP */
-	if (!(flags & FLAGS_TO_IGNORE_MASK)) {
-		flags |= FLAG_SHOW_INFO;
+	if (!(ctl.flags & FLAGS_TO_IGNORE_MASK)) {
+		ctl.flags |= FLAG_SHOW_INFO;
 	}
 
 	if (isatty(STDOUT_FILENO) != 0)
-		colors = 1;
+		ctl.colors = 1;
 
 	/* we know what we want to display now, so display it. */
-	if (flags & FLAG_SHOW_INFO && !(flags & FLAG_SPLIT)) {
+	if (ctl.flags & FLAG_SHOW_INFO && !(ctl.flags & FLAG_SPLIT)) {
 		unsigned single_host = 0;
 
-		if ((familyIPv6 && info.prefix == 128) ||
-		    (!familyIPv6 && info.prefix == 32)) {
+		if ((ctl.family == AF_INET6 && info.prefix == 128) ||
+		    (ctl.family == AF_INET && info.prefix == 32)) {
 			single_host = 1;
 		}
 
-		if ((!randomStr || single_host) &&
+		if ((!ctl.randomStr || single_host) &&
 		    (single_host || strcmp(info.network, info.ip) != 0)) {
 			if (info.expanded_ip)
-				default_printf("Full Address:\t", "%s\n", info.expanded_ip);
-			default_printf("Address:\t", "%s\n", info.ip);
+				color_printf(&ctl, KBLUE, "Full Address:\t", "%s\n", info.expanded_ip);
+			color_printf(&ctl, KBLUE, "Address:\t", "%s\n", info.ip);
 		}
 
 		if (!single_host) {
 			if (info.expanded_network) {
-				default_printf("Full Network:\t", "%s/%u\n", info.expanded_network, info.prefix);
+				color_printf(&ctl, KBLUE, "Full Network:\t", "%s/%u\n", info.expanded_network, info.prefix);
 			}
 
-			default_printf("Network:\t", "%s/%u\n", info.network, info.prefix);
+			color_printf(&ctl, KBLUE, "Network:\t", "%s/%u\n", info.network, info.prefix);
 
-			default_printf("Netmask:\t", "%s = %u\n", info.netmask, info.prefix);
+			color_printf(&ctl, KBLUE, "Netmask:\t", "%s = %u\n", info.netmask, info.prefix);
 
 
 			if (info.broadcast)
-				default_printf("Broadcast:\t", "%s\n", info.broadcast);
+				color_printf(&ctl, KBLUE, "Broadcast:\t", "%s\n", info.broadcast);
 		}
 
-		if (((flags & FLAG_SHOW_ALL_INFO) == FLAG_SHOW_ALL_INFO) && info.reverse_dns)
-			default_printf("Reverse DNS:\t", "%s\n", info.reverse_dns);
+		if (((ctl.flags & FLAG_SHOW_ALL_INFO) == FLAG_SHOW_ALL_INFO) && info.reverse_dns)
+			color_printf(&ctl, KBLUE, "Reverse DNS:\t", "%s\n", info.reverse_dns);
 
 		if (!single_host) {
 			printf("\n");
 			if (info.type)
-				dist_printf("Address space:\t", "%s\n", info.type);
+				color_printf(&ctl, KMAG, "Address space:\t", "%s\n", info.type);
 			if (info.class)
-				dist_printf("Address class:\t", "%s\n", info.class);
+				color_printf(&ctl, KMAG, "Address class:\t", "%s\n", info.class);
 
 			if (info.hostmin)
-				default_printf("HostMin:\t", "%s\n", info.hostmin);
+				color_printf(&ctl, KBLUE, "HostMin:\t", "%s\n", info.hostmin);
 
 			if (info.hostmax)
-				default_printf("HostMax:\t", "%s\n", info.hostmax);
+				color_printf(&ctl, KBLUE, "HostMax:\t", "%s\n", info.hostmax);
 
-			if (familyIPv6 && info.prefix < 112)
-				default_printf("Hosts/Net:\t", "2^(%u) = %s\n", 128-info.prefix, info.hosts);
+			if (ctl.family == AF_INET6 && info.prefix < 112)
+				color_printf(&ctl, KBLUE, "Hosts/Net:\t", "2^(%u) = %s\n", 128-info.prefix, info.hosts);
 			else
-				default_printf("Hosts/Net:\t", "%s\n", info.hosts);
+				color_printf(&ctl, KBLUE, "Hosts/Net:\t", "%s\n", info.hosts);
 		} else {
 			if (info.type)
-				dist_printf("Address space:\t", "%s\n", info.type);
+				color_printf(&ctl, KMAG, "Address space:\t", "%s\n", info.type);
 			if (info.class)
-				dist_printf("Address class:\t", "%s\n", info.class);
+				color_printf(&ctl, KMAG, "Address class:\t", "%s\n", info.class);
 
 		}
 
 		if (info.geoip_country || info.geoip_city || info.geoip_coord) {
 			printf("\n");
 			if (info.geoip_ccode)
-				dist_printf("Country code:\t", "%s\n", info.geoip_ccode);
+				color_printf(&ctl, KMAG, "Country code:\t", "%s\n", info.geoip_ccode);
 			if (info.geoip_country)
-				dist_printf("Country:\t", "%s\n", info.geoip_country);
+				color_printf(&ctl, KMAG, "Country:\t", "%s\n", info.geoip_country);
 			if (info.geoip_city)
-				dist_printf("City:\t\t", "%s\n", info.geoip_city);
+				color_printf(&ctl, KMAG, "City:\t\t", "%s\n", info.geoip_city);
 			if (info.geoip_coord)
-				dist_printf("Coordinates:\t", "%s\n", info.geoip_coord);
+				color_printf(&ctl, KMAG, "Coordinates:\t", "%s\n", info.geoip_coord);
 		}
 
-	} else if (!(flags & FLAG_SHOW_INFO)) {
+	} else if (!(ctl.flags & FLAG_SHOW_INFO)) {
 
-		if (flags & FLAG_SHOW_NETMASK) {
+		if (ctl.flags & FLAG_SHOW_NETMASK) {
 			printf("NETMASK=%s\n", info.netmask);
 		}
 
-		if (flags & FLAG_SHOW_PREFIX) {
+		if (ctl.flags & FLAG_SHOW_PREFIX) {
 			printf("PREFIX=%u\n", info.prefix);
 		}
 
-		if ((flags & FLAG_SHOW_BROADCAST) && !familyIPv6) {
+		if ((ctl.flags & FLAG_SHOW_BROADCAST) && ctl.family == AF_INET) {
 			printf("BROADCAST=%s\n", info.broadcast);
 		}
 
-		if (flags & FLAG_SHOW_NETWORK) {
+		if (ctl.flags & FLAG_SHOW_NETWORK) {
 			printf("NETWORK=%s\n", info.network);
 		}
 
-		if (flags & FLAG_SHOW_REVERSE) {
+		if (ctl.flags & FLAG_SHOW_REVERSE) {
 			printf("REVERSEDNS=%s\n", info.reverse_dns);
 		}
 
-		if ((flags & FLAG_SHOW_MINADDR) && info.hostmin) {
+		if ((ctl.flags & FLAG_SHOW_MINADDR) && info.hostmin) {
 			printf("MINADDR=%s\n", info.hostmin);
 		}
 
-		if ((flags & FLAG_SHOW_MAXADDR) && info.hostmax) {
+		if ((ctl.flags & FLAG_SHOW_MAXADDR) && info.hostmax) {
 			printf("MAXADDR=%s\n", info.hostmax);
 		}
 
-		if ((flags & FLAG_SHOW_ADDRSPACE) && info.type) {
+		if ((ctl.flags & FLAG_SHOW_ADDRSPACE) && info.type) {
 			if (strchr(info.type, ' ') != NULL)
 				printf("ADDRSPACE=\"%s\"\n", info.type);
 			else
 				printf("ADDRSPACE=%s\n", info.type);
 		}
 
-		if ((flags & FLAG_SHOW_ADDRESSES) && info.hosts[0]) {
+		if ((ctl.flags & FLAG_SHOW_ADDRESSES) && info.hosts[0]) {
 			if (strchr(info.hosts, ' ') != NULL)
 				printf("ADDRESSES=\"%s\"\n", info.hosts);
 			else
 				printf("ADDRESSES=%s\n", info.hosts);
 		}
 
-		if ((flags & FLAG_RESOLVE_HOST) && info.hostname) {
+		if ((ctl.flags & FLAG_RESOLVE_HOST) && info.hostname) {
 			printf("HOSTNAME=%s\n", info.hostname);
 		}
 
-		if (flags & FLAG_RESOLVE_IP) {
+		if (ctl.flags & FLAG_RESOLVE_IP) {
 			printf("ADDRESS=%s\n", ipStr);
 		}
 
-		if ((flags & FLAG_SHOW_GEOIP) == FLAG_SHOW_GEOIP) {
+		if ((ctl.flags & FLAG_SHOW_GEOIP) == FLAG_SHOW_GEOIP) {
 			if (info.geoip_ccode)
 				printf("COUNTRYCODE=%s\n", info.geoip_ccode);
 			if (info.geoip_country) {
@@ -1598,11 +1588,11 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (flags & FLAG_SPLIT) {
-		if (familyIPv6) {
-			show_split_networks_v6(splitPrefix, &info);
+	if (ctl.flags & FLAG_SPLIT) {
+		if (ctl.family == AF_INET6) {
+			show_split_networks_v6(&ctl, splitPrefix, &info);
 		} else {
-			show_split_networks_v4(splitPrefix, &info);
+			show_split_networks_v4(&ctl, splitPrefix, &info);
 		}
 	}
 
@@ -1618,7 +1608,7 @@ int main(int argc, char **argv)
 	if (info.hostmax != info.network)
 		free(info.network);
 	free(info.reverse_dns);
-	free(splitStr);
+	free(ctl.splitStr);
 
 	return 0;
 }

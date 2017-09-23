@@ -75,14 +75,14 @@ safe_asprintf(char **strp, const char *fmt, ...)
 	return ret;
 }
 
-int geo_setup(void)
+int geo_setup(const struct ipcalc_control *ctl)
 {
 	static void *ld = NULL;
 	static int ret = 0;
 	static char err[256] = {0};
 
 	if (ld != NULL || ret != 0) {
-	    	if (!beSilent && err[0] != 0) {
+		if (!ctl->beSilent && err[0] != 0) {
 	    		fprintf(stderr, "%s", err);
 		}
 		return ret;
@@ -134,14 +134,15 @@ extern void _GeoIP_setup_dbfilename(void);
 #  define pGeoIP_code_by_id GeoIP_code_by_id
 # endif
 
-void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char **coord)
+void geo_ipv4_lookup(const struct ipcalc_control *ctl, struct in_addr ip,
+		     char **country, char **ccode, char **city, char **coord)
 {
 	GeoIP *gi;
 	GeoIPRecord *gir;
 	int country_id;
 	const char *p;
 
-	if (geo_setup() != 0)
+	if (geo_setup(ctl) != 0)
 		return;
 
 	ip.s_addr = ntohl(ip.s_addr);
@@ -200,14 +201,15 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **cit
 	return;
 }
 
-void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **city, char **coord)
+void geo_ipv6_lookup(const struct ipcalc_control *ctl, struct in6_addr *ip,
+		     char **country, char **ccode, char **city, char **coord)
 {
 	GeoIP *gi;
 	GeoIPRecord *gir;
 	int country_id;
 	const char *p;
 
-	if (geo_setup() != 0)
+	if (geo_setup(ctl) != 0)
 		return;
 
 	p_GeoIP_setup_dbfilename();

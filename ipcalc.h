@@ -17,14 +17,25 @@
  *   Nikos Mavrogiannopoulos <nmav@redhat.com>
  */
 
+struct ipcalc_control {
+	char *hostname;
+	char *randomStr;
+	char *splitStr;
+	int family;
+	uint32_t flags;
+	unsigned int
+		beSilent:1,
+		colors:1;
+};
+
 #ifdef USE_GEOIP
-void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char  **coord);
-void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **city, char **coord);
-int geo_setup(void);
+void geo_ipv4_lookup(const struct ipcalc_control *ctl, struct in_addr ip, char **country, char **ccode, char **city, char  **coord);
+void geo_ipv6_lookup(const struct ipcalc_control *ctl, struct in6_addr *ip, char **country, char **ccode, char **city, char **coord);
+int geo_setup(const struct ipcalc_control *ctl);
 #else
-# define geo_ipv4_lookup(x,y,z,w,a)
-# define geo_ipv6_lookup(x,y,z,w,a)
-# define geo_setup() -1
+# define geo_ipv4_lookup(x,y,z,w,a,b)
+# define geo_ipv6_lookup(x,y,z,w,a,b)
+# define geo_setup(a) -1
 #endif
 
 char __attribute__((warn_unused_result)) *safe_strdup(const char *str);
@@ -61,18 +72,15 @@ typedef struct ip_info_st {
 	const char *class;
 } ip_info_st;
 
-void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info);
-void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info);
+void show_split_networks_v4(const struct ipcalc_control *ctl, unsigned split_prefix, const struct ip_info_st *info);
+void show_split_networks_v6(const struct ipcalc_control *ctl, unsigned split_prefix, const struct ip_info_st *info);
 
 #define KBLUE  "\x1B[34m"
 #define KMAG   "\x1B[35m"
 #define KRESET "\033[0m"
 
-#define default_printf(...) color_printf(KBLUE, __VA_ARGS__)
-#define dist_printf(...) color_printf(KMAG, __VA_ARGS__)
-
 void
-__attribute__ ((format(printf, 3, 4)))
-color_printf(const char *color, const char *title, const char *fmt, ...);
+__attribute__ ((format(printf, 4, 5)))
+color_printf(const struct ipcalc_control *ctl, const char *color, const char *title, const char *fmt, ...);
 
 extern int beSilent;
