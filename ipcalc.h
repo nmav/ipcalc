@@ -22,8 +22,27 @@ struct ipcalc_control {
 	char *randomStr;
 	char *splitStr;
 	int family;
-	uint32_t flags;
 	unsigned int
+		resolve_host:1,
+		revolve_ip:1,
+		check_address:1,
+		show_info:1,
+		show_broadcast:1,
+		show_netmask:1,
+		show_network:1,
+		show_prefix:1,
+		show_min_addr:1,
+		show_max_addr:1,
+		show_addresses:1,
+		show_address_space:1,
+#ifdef USE_GEOIP
+		get_geoip:1,
+		show_geoip:1,
+#endif
+		show_all:1,
+		show_reverse:1,
+		assume_class_prefix:1,
+		split:1,
 		beSilent:1,
 		colors:1;
 };
