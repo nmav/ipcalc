@@ -574,7 +574,7 @@ char *ipv6_prefix_to_hosts(char *hosts, unsigned hosts_size, unsigned prefix)
 }
 
 static
-int get_ipv4_info(const struct ipcalc_control *ctl, char *ipStr, int prefix,
+int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 		  ip_info_st *info)
 {
 	struct in_addr ip, netmask, network, broadcast, minhost, maxhost;
@@ -839,7 +839,7 @@ char *expand_ipv6(struct in6_addr *ip6)
 }
 
 static
-int get_ipv6_info(const struct ipcalc_control *ctl, const char *ipStr,
+int get_ipv6_info(struct ipcalc_control *ctl, const char *ipStr,
 		  int prefix, ip_info_st *info)
 {
 	struct in6_addr ip6, mask, network;
@@ -1605,6 +1605,7 @@ int main(int argc, char **argv)
 	}
 
 	/* clean up */
+	geo_end(&ctl);
 	free(info.broadcast);
 	free(info.expanded_ip);
 	free(info.expanded_network);

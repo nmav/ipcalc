@@ -18,6 +18,7 @@
  */
 
 struct ipcalc_control {
+	void *ld;
 	char *hostname;
 	char *randomStr;
 	char *splitStr;
@@ -48,13 +49,15 @@ struct ipcalc_control {
 };
 
 #ifdef USE_GEOIP
-void geo_ipv4_lookup(const struct ipcalc_control *ctl, struct in_addr ip, char **country, char **ccode, char **city, char  **coord);
-void geo_ipv6_lookup(const struct ipcalc_control *ctl, struct in6_addr *ip, char **country, char **ccode, char **city, char **coord);
-int geo_setup(const struct ipcalc_control *ctl);
+void geo_ipv4_lookup(struct ipcalc_control *ctl, struct in_addr ip, char **country, char **ccode, char **city, char  **coord);
+void geo_ipv6_lookup(struct ipcalc_control *ctl, struct in6_addr *ip, char **country, char **ccode, char **city, char **coord);
+int geo_setup(struct ipcalc_control *ctl);
+int geo_end(struct ipcalc_control *ctl);
 #else
 # define geo_ipv4_lookup(x,y,z,w,a,b)
 # define geo_ipv6_lookup(x,y,z,w,a,b)
 # define geo_setup(a) -1
+# define geo_end(a)
 #endif
 
 char __attribute__((warn_unused_result)) *safe_strdup(const char *str);
