@@ -89,7 +89,13 @@ int geo_setup(struct ipcalc_control *ctl)
 
 	ctl->ld = dlopen(LIBNAME, RTLD_LAZY);
 	if (ctl->ld == NULL) {
-		snprintf(err, sizeof(err), "ipcalc: could not open %s\n", LIBNAME);
+		char *errmsg;
+
+		errmsg = dlerror();
+		if (errmsg)
+			snprintf(err, sizeof(err), "ipcalc: could not open %s: %s\n", LIBNAME, errmsg);
+		else
+			snprintf(err, sizeof(err), "ipcalc: could not open %s\n", LIBNAME);
 		ret = -1;
 		goto exit;
 	}
