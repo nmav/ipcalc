@@ -32,6 +32,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdint.h>
+#include <error.h>
 
 #include "ipcalc.h"
 
@@ -55,24 +56,27 @@ void show_split_networks_v4(const struct ipcalc_control *ctl, unsigned split_pre
 
 	if (splitmask < nmask) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "Cannot subnet to /%d with this base network, use a prefix > /%d\n",
+			error(EXIT_FAILURE, 0,
+				"cannot subnet to /%d with this base network, use a prefix > /%d",
 				split_prefix, info->prefix);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	printf("[Split networks]\n");
 
 	if (inet_pton(AF_INET, info->network, &net) <= 0) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "ipcalc: bad IPv4 address: %s\n", info->network);
-		exit(1);
+			error(EXIT_FAILURE, 0,
+				"bad IPv4 address: %s", info->network);
+		exit(EXIT_FAILURE);
 	}
 	net.s_addr = ntohl(net.s_addr);
 
 	if (inet_pton(AF_INET, info->broadcast, &broadcast) <= 0) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "ipcalc: bad broadcast address: %s\n", info->broadcast);
-		exit(1);
+			error(EXIT_FAILURE, 0,
+				"bad broadcast address: %s", info->broadcast);
+		exit(EXIT_FAILURE);
 	}
 	broadcast.s_addr = ntohl(broadcast.s_addr);
 
@@ -147,26 +151,26 @@ void show_split_networks_v6(const struct ipcalc_control *ctl, unsigned split_pre
 
 	if (inet_pton(AF_INET6, info->network, &net) <= 0) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "ipcalc: bad IPv6 address: %s\n", info->network);
-		exit(1);
+			error(EXIT_FAILURE, 0, "bad IPv6 network: %s", info->network);
+		exit(EXIT_FAILURE);
 	}
 
 	if (inet_pton(AF_INET6, info->hostmax, &netlast) <= 0) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "ipcalc: bad IPv6 address: %s\n", info->hostmax);
-		exit(1);
+			error(EXIT_FAILURE, 0, "bad IPv6 address: %s", info->hostmax);
+		exit(EXIT_FAILURE);
 	}
 
 	if (inet_pton(AF_INET6, info->netmask, &netmask) <= 0) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "ipcalc: bad IPv6 mask: %s\n", info->netmask);
-		exit(1);
+			error(EXIT_FAILURE, 0, "bad IPv6 mask: %s", info->netmask);
+		exit(EXIT_FAILURE);
 	}
 
 	if (ipv6_prefix_to_mask(split_prefix, &splitmask) < 0) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "ipcalc: IPv6 prefix: %d\n", split_prefix);
-		exit(1);
+			error(EXIT_FAILURE, 0, "bad IPv6 prefix: %d", split_prefix);
+		exit(EXIT_FAILURE);
 	}
 
 	i = 0;
@@ -181,9 +185,10 @@ void show_split_networks_v6(const struct ipcalc_control *ctl, unsigned split_pre
 
 	if (j == 2) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "Cannot subnet to /%d with this base network, use a prefix > /%d\n",
+			error(EXIT_FAILURE, 0,
+				"cannot subnet to /%d with this base network, use a prefix > /%d",
 				split_prefix, info->prefix);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	memset(&sdiff, 0, sizeof(sdiff));

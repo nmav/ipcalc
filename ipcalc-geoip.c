@@ -27,6 +27,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdarg.h>
+#include <error.h>
+#include <errno.h>
+
 #include "ipcalc.h"
 
 #ifdef USE_GEOIP
@@ -69,8 +72,7 @@ safe_asprintf(char **strp, const char *fmt, ...)
 	ret = vasprintf(&(*strp), fmt, args);
 	va_end(args);
 	if (ret < 0) {
-		fprintf(stderr, "Memory allocation failure\n");
-		exit(1);
+		error_at_line(EXIT_FAILURE, errno, __FILE__, __LINE__, "memory allocation failure");
 	}
 	return ret;
 }

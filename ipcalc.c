@@ -38,6 +38,8 @@
 #include <errno.h>
 #include <time.h>		/* clock_gettime */
 #include <limits.h>
+#include <error.h>
+
 #include "ipcalc.h"
 
 /*!
@@ -94,8 +96,7 @@ extern char __attribute__((warn_unused_result)) *safe_strdup(const char *str)
 
 	ret = strdup(str);
 	if (!ret) {
-		fprintf(stderr, "Memory allocation failure\n");
-		exit(1);
+		error_at_line(EXIT_FAILURE, errno, __FILE__, __LINE__, "memory allocation failure");
 	}
 	return ret;
 }
@@ -585,7 +586,7 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 
 	if (inet_pton(AF_INET, ipStr, &ip) <= 0) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "ipcalc: bad IPv4 address: %s\n",
+			error(0, 0, "bad IPv4 address: %s",
 				ipStr);
 		return -1;
 	}
@@ -606,10 +607,8 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 		tmp = NULL;
 		for (; i > 0; i--) {
 			if (asprintf(&tmp, "%s.0", ipStr) == -1) {
-				fprintf(stderr,
-					"Memory allocation failure line %d\n",
-					__LINE__);
-				abort();
+				error_at_line(EXIT_FAILURE, errno, __FILE__, __LINE__,
+					"memory allocation failure");
 			}
 			ipStr = tmp;
 		}
@@ -622,14 +621,13 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 
 	if (prefix > 32) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "ipcalc: bad IPv4 prefix %d\n", prefix);
+			error(0, 0, "bad IPv4 prefix: %d", prefix);
 		return -1;
 	}
 
 	if (inet_ntop(AF_INET, &ip, namebuf, sizeof(namebuf)) == 0) {
 		if (!ctl->beSilent)
-			fprintf(stderr,
-				"ipcalc: error calculating the IPv4 network\n");
+			error(0, 0, "error calculating the IPv4 network");
 		return -1;
 	}
 	info->ip = safe_strdup(namebuf);
@@ -638,9 +636,8 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 	memset(namebuf, '\0', sizeof(namebuf));
 
 	if (inet_ntop(AF_INET, &netmask, namebuf, INET_ADDRSTRLEN) == NULL) {
-		fprintf(stderr, "Memory allocation failure line %d\n",
-			__LINE__);
-		abort();
+		error_at_line(EXIT_FAILURE, errno, __FILE__, __LINE__,
+			"memory allocation failure");
 	}
 	info->netmask = safe_strdup(namebuf);
 	info->prefix = prefix;
@@ -649,9 +646,8 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 
 	memset(namebuf, '\0', sizeof(namebuf));
 	if (inet_ntop(AF_INET, &broadcast, namebuf, INET_ADDRSTRLEN) == NULL) {
-		fprintf(stderr, "Memory allocation failure line %d\n",
-			__LINE__);
-		abort();
+		error_at_line(EXIT_FAILURE, errno, __FILE__, __LINE__,
+			"memory allocation failure");
 	}
 	info->broadcast = safe_strdup(namebuf);
 
@@ -661,9 +657,8 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 
 	memset(namebuf, '\0', sizeof(namebuf));
 	if (inet_ntop(AF_INET, &network, namebuf, INET_ADDRSTRLEN) == NULL) {
-		fprintf(stderr, "Memory allocation failure line %d\n",
-			__LINE__);
-		abort();
+		error_at_line(EXIT_FAILURE, errno, __FILE__, __LINE__,
+			"memory allocation failure");
 	}
 
 	info->network = safe_strdup(namebuf);
@@ -678,9 +673,8 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 			minhost.s_addr = htonl(ntohl(minhost.s_addr) | 1);
 		if (inet_ntop(AF_INET, &minhost, namebuf, INET_ADDRSTRLEN) ==
 		    NULL) {
-			fprintf(stderr, "Memory allocation failure line %d\n",
-				__LINE__);
-			abort();
+			error_at_line(EXIT_FAILURE, errno, __FILE__, __LINE__,
+				"memory allocation failure");
 		}
 		info->hostmin = safe_strdup(namebuf);
 
@@ -691,8 +685,7 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 		}
 		if (inet_ntop(AF_INET, &maxhost, namebuf, sizeof(namebuf)) == 0) {
 			if (!ctl->beSilent)
-				fprintf(stderr,
-					"ipcalc: error calculating the IPv4 network\n");
+				error(0, 0, "error calculating the IPv4 network");
 			return -1;
 		}
 
@@ -714,9 +707,7 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 		info->hostname = get_hostname(AF_INET, &ip);
 		if (info->hostname == NULL) {
 			if (!ctl->beSilent) {
-				sprintf(errBuf,
-					"ipcalc: cannot find hostname for %s",
-					ipStr);
+				error(0, 0, "cannot find hostname for %s", ipStr);
 				herror(errBuf);
 			}
 			return -1;
@@ -850,8 +841,7 @@ int get_ipv6_info(struct ipcalc_control *ctl, const char *ipStr,
 
 	if (inet_pton(AF_INET6, ipStr, &ip6) <= 0) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "ipcalc: bad IPv6 address: %s\n",
-				ipStr);
+			error(0, 0, "bad IPv6 address: %s", ipStr);
 		return -1;
 	}
 
@@ -860,8 +850,7 @@ int get_ipv6_info(struct ipcalc_control *ctl, const char *ipStr,
 
 	if (inet_ntop(AF_INET6, &ip6, errBuf, sizeof(errBuf)) == 0) {
 		if (!ctl->beSilent)
-			fprintf(stderr,
-				"ipcalc: error calculating the IPv6 network\n");
+			error(0, 0, "error calculating the IPv6 network");
 		return -1;
 	}
 
@@ -869,8 +858,7 @@ int get_ipv6_info(struct ipcalc_control *ctl, const char *ipStr,
 
 	if (prefix > 128) {
 		if (!ctl->beSilent)
-			fprintf(stderr, "ipcalc: bad IPv6 prefix: %d\n",
-				prefix);
+			error(0, 0, "bad IPv6 prefix: %d", prefix);
 		return -1;
 	} else if (prefix < 0) {
 		prefix = 128;
@@ -880,9 +868,7 @@ int get_ipv6_info(struct ipcalc_control *ctl, const char *ipStr,
 
 	if (ipv6_prefix_to_mask(prefix, &mask) == -1) {
 		if (!ctl->beSilent)
-			fprintf(stderr,
-				"ipcalc: error converting IPv6 prefix: %d\n",
-				prefix);
+			error(0, 0, "error converting IPv6 prefix: %d", prefix);
 		return -1;
 	}
 
@@ -893,8 +879,7 @@ int get_ipv6_info(struct ipcalc_control *ctl, const char *ipStr,
 
 	if (inet_ntop(AF_INET6, &network, errBuf, sizeof(errBuf)) == 0) {
 		if (!ctl->beSilent)
-			fprintf(stderr,
-				"ipcalc: error calculating the IPv6 network\n");
+			error(0, 0, "error calculating the IPv6 network");
 		return -1;
 	}
 
@@ -912,8 +897,7 @@ int get_ipv6_info(struct ipcalc_control *ctl, const char *ipStr,
 			network.s6_addr[i] |= ~mask.s6_addr[i];
 		if (inet_ntop(AF_INET6, &network, errBuf, sizeof(errBuf)) == 0) {
 			if (!ctl->beSilent)
-				fprintf(stderr,
-					"ipcalc: error calculating the IPv6 network\n");
+				error(0, 0, "error calculating the IPv6 network");
 			return -1;
 		}
 
@@ -935,9 +919,7 @@ int get_ipv6_info(struct ipcalc_control *ctl, const char *ipStr,
 		info->hostname = get_hostname(AF_INET6, &ip6);
 		if (info->hostname == NULL) {
 			if (!ctl->beSilent) {
-				sprintf(errBuf,
-					"ipcalc: cannot find hostname for %s",
-					ipStr);
+				error(0, 0, "cannot find hostname for %s", ipStr);
 				herror(errBuf);
 			}
 			return -1;
@@ -1194,9 +1176,7 @@ static void parse_args(struct ipcalc_control *ctl, int argc, char **argv)
 			case '4':
 			case '6':
 				if (ctl->family != AF_UNSPEC && !ctl->beSilent) {
-					fprintf(stderr,
-						"ipcalc: you cannot specify both IPv4 and IPv6\n");
-					exit(1);
+					error(EXIT_FAILURE, 0, "you cannot specify both IPv4 and IPv6");
 				}
 				if (c == '4')
 					ctl->family = AF_INET;
@@ -1244,15 +1224,15 @@ static void parse_args(struct ipcalc_control *ctl, int argc, char **argv)
 				break;
 			case 'v':
 				printf("ipcalc %s\n", VERSION);
-				exit(0);
+				exit(EXIT_SUCCESS);
 				break;
 			case OPT_USAGE:
 				usage(0);
-				exit(0);
+				exit(EXIT_SUCCESS);
 			case '?':
 			default:
 				usage(1);
-				exit(0);
+				exit(EXIT_SUCCESS);
 		}
 	}
 	return;
@@ -1318,16 +1298,13 @@ int main(int argc, char **argv)
 	    (ctl.hostname && ctl.splitStr) ||
 	    (ctl.randomStr && ctl.splitStr)) {
 		if (!ctl.beSilent)
-			fprintf(stderr,
-				"ipcalc: you cannot mix these options\n");
+			error(EXIT_FAILURE, 0, "--lookup-host --random-private and --split options cannot be mixed");
 		return 1;
 	}
 
 	if (ctl.hostname == NULL && ctl.randomStr == NULL && !ipStr) {
 		if (!ctl.beSilent) {
-			fprintf(stderr,
-				"ipcalc: ip address expected\n");
-			usage(1);
+			error(EXIT_FAILURE, 0, "ip address expected");
 		}
 		return 1;
 	}
@@ -1337,24 +1314,22 @@ int main(int argc, char **argv)
 		ipStr = get_ip_address(&ctl);
 		if (ipStr == NULL) {
 			if (!ctl.beSilent)
-				fprintf(stderr,
-					"ipcalc: could not resolve %s\n", ctl.hostname);
+				error(EXIT_FAILURE, 0, "could not resolve %s", ctl.hostname);
 			return 1;
 		}
 	} else if (ctl.randomStr) { /* generate a random private network if asked */
 		prefix = str_to_prefix(&ctl, ctl.randomStr, 1);
 		if (prefix < 0) {
 			if (!ctl.beSilent)
-				fprintf(stderr,
-					"ipcalc: bad %s prefix: %s\n", ctl.family == AF_INET6 ? "IPv6" : "IPv4", ctl.randomStr);
+				error(EXIT_FAILURE, 0, "bad %s prefix: %s",
+					ctl.family == AF_INET6 ? "IPv6" : "IPv4", ctl.randomStr);
 			return 1;
 		}
 
 		ipStr = generate_ip_network(&ctl, prefix);
 		if (ipStr == NULL) {
 			if (!ctl.beSilent)
-				fprintf(stderr,
-					"ipcalc: cannot generate network with prefix: %u\n",
+				error(EXIT_FAILURE, 0, "cannot generate network with prefix: %u",
 					prefix);
 			return 1;
 		}
@@ -1362,8 +1337,8 @@ int main(int argc, char **argv)
 		splitPrefix = str_to_prefix(&ctl, ctl.splitStr, 1);
 		if (splitPrefix < 0) {
 			if (!ctl.beSilent)
-				fprintf(stderr,
-					"ipcalc: bad %s prefix: %s\n", ctl.family == AF_INET6 ? "IPv6" : "IPv4", ctl.splitStr);
+				error(EXIT_FAILURE, 0, "bad %s prefix: %s",
+					ctl.family == AF_INET6 ? "IPv6" : "IPv4", ctl.splitStr);
 			return 1;
 		}
 	}
@@ -1386,9 +1361,8 @@ int main(int argc, char **argv)
 			prefixStr = chptr;
 		} else {
 			if (!ctl.beSilent) {
-				fprintf(stderr, "ipcalc: unexpected argument: %s\n",
+				error(EXIT_FAILURE, 0, "unexpected argument: %s",
 					chptr);
-				usage(1);
 			}
 			return 1;
 		}
@@ -1404,8 +1378,8 @@ int main(int argc, char **argv)
 		prefix = str_to_prefix(&ctl, prefixStr, 0);
 		if (prefix < 0) {
 			if (!ctl.beSilent)
-				fprintf(stderr,
-					"ipcalc: bad %s prefix: %s\n", ctl.family == AF_INET6 ? "IPv6" : "IPv4", prefixStr);
+				error(EXIT_FAILURE, 0, "bad %s prefix: %s",
+					ctl.family == AF_INET6 ? "IPv6" : "IPv4", prefixStr);
 			return 1;
 		}
 	}
@@ -1416,9 +1390,7 @@ int main(int argc, char **argv)
 		if (ctl.show_broadcast || ctl.show_network || ctl.show_prefix) {
 			if (netmaskStr && prefix >= 0) {
 				if (!ctl.beSilent) {
-					fprintf(stderr,
-						"ipcalc: both netmask and prefix specified\n");
-					usage(1);
+					error(EXIT_FAILURE, 0, "both netmask and prefix specified");
 				}
 				return 1;
 			}
@@ -1428,8 +1400,7 @@ int main(int argc, char **argv)
 			prefix = ipv4_mask_to_int(netmaskStr);
 			if (prefix < 0) {
 				if (!ctl.beSilent)
-					fprintf(stderr,
-						"ipcalc: bad IPv4 prefix: %s\n", prefixStr);
+					error(EXIT_FAILURE, 0, "bad IPv4 prefix: %s", prefixStr);
 				return 1;
 			}
 		}
