@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <stdio.h>
+#include <stdio_ext.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
@@ -1273,6 +1274,29 @@ static int option_not_specified(const struct ipcalc_control *ctl)
 	return 1;
 }
 
+static int close_stream(FILE *stream)
+{
+	const int some_pending = (__fpending(stream) != 0);
+	const int prev_fail = (ferror(stream) != 0);
+	const int fclose_fail = (fclose(stream) != 0);
+
+	if (prev_fail || (fclose_fail && (some_pending || errno != EBADF))) {
+		if (!fclose_fail && !(errno == EPIPE))
+			errno = 0;
+		return EOF;
+	}
+	return 0;
+}
+
+/* Meant to be used atexit(close_stdout); */
+static void close_stdout(void)
+{
+	if (close_stream(stdout) != 0 && !(errno == EPIPE))
+		error(EXIT_FAILURE, errno, "stdout write error");
+	if (close_stream(stderr) != 0 && !(errno == EPIPE))
+		error(EXIT_FAILURE, errno, "stderr write error");
+}
+
 /*!
   \fn main(int argc, const char **argv)
   \brief wrapper program for ipcalc functions.
@@ -1291,6 +1315,7 @@ int main(int argc, char **argv)
 	ip_info_st info = { 0 };
 	int r = 0;
 
+	atexit(close_stdout);
 	parse_args(&ctl, argc, argv);
 	if (optind < argc) {
 		ipStr = argv[optind++];
