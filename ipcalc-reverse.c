@@ -122,5 +122,5 @@ char *calc_reverse_dns6(struct in6_addr *ip, unsigned prefix)
 
 	strcpy(&str[j], "ip6.arpa.");
 
-	return strdup(str);
+	return safe_strdup(str);
 }
