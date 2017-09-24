@@ -233,7 +233,7 @@ static char *get_ip_address(const struct ipcalc_control *ctl)
 	if (err != 0)
 		return NULL;
 
-	for (rp=res;rp!=NULL;rp=rp->ai_next) {
+	for (rp = res; rp != NULL; rp = rp->ai_next) {
 		if (rp->ai_family == AF_INET)
 			addr = (&((struct sockaddr_in *)(rp->ai_addr))->sin_addr);
 		else

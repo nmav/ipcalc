@@ -84,7 +84,7 @@ char *calc_reverse_dns4(struct in_addr ip, unsigned prefix, struct in_addr netwo
 #endif
 
 	if (ret == -1)
-	    return NULL;
+		return NULL;
 	return str;
 }
 
@@ -101,21 +101,21 @@ char *calc_reverse_dns6(struct in6_addr *ip, unsigned prefix)
 {
 	unsigned i, j = 0;
 	char str[256];
-	unsigned max = prefix/8;
+	unsigned max = prefix / 8;
 
 	if (prefix % 4 != 0)
 		return NULL;
 
 	if (prefix % 8 == 4) {
-		str[j++] = hexchar(ip->s6_addr[(prefix+4)/8-1] >> 4);
+		str[j++] = hexchar(ip->s6_addr[(prefix + 4) / 8 - 1] >> 4);
 		str[j++] = '.';
 	}
 
-	for (i=0;i<max;i++) {
-		str[j++] = hexchar(ip->s6_addr[max-1-i] & 0xf);
+	for (i = 0; i < max; i++) {
+		str[j++] = hexchar(ip->s6_addr[max - 1 - i] & 0xf);
 		str[j++] = '.';
 
-		str[j++] = hexchar(ip->s6_addr[max-1-i] >> 4);
+		str[j++] = hexchar(ip->s6_addr[max - 1 - i] >> 4);
 		str[j++] = '.';
 
 	}

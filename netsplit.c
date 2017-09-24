@@ -131,7 +131,7 @@ static void v6add(struct in6_addr *a, const struct in6_addr *b)
 		tmp = (uint32_t)a->s6_addr[i] + (uint32_t)b->s6_addr[i];
 		if (tmp > 0xff && i > 0) {
 			j = i - 1;
-			for (j=i-1;j>=0;j--) {
+			for (j = i - 1; j >= 0; j--) {
 				a->s6_addr[j]++;
 				if (a->s6_addr[j] != 0)
 					break;
@@ -216,8 +216,8 @@ void show_split_networks_v6(const struct ipcalc_control *ctl, unsigned split_pre
 		v6add(&start, &sdiff);
 
 		j = 0;
-		for (k = 0; k < 16; k+=2)
-			if (end.s6_addr[k] != 0xff && end.s6_addr[k+1] != 0xff)
+		for (k = 0; k < 16; k += 2)
+			if (end.s6_addr[k] != 0xff && end.s6_addr[k + 1] != 0xff)
 				j = 1;
 		if (!j)
 			i = 1;
