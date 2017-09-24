@@ -61,6 +61,7 @@ int geo_end(struct ipcalc_control *ctl);
 #endif
 
 char __attribute__((warn_unused_result)) *safe_strdup(const char *str);
+int __attribute__((__format__(printf, 2, 3))) safe_asprintf(char **strp, const char *fmt, ...);
 
 char *calc_reverse_dns4(struct in_addr ip, unsigned prefix, struct in_addr net, struct in_addr bcast);
 char *calc_reverse_dns6(struct in6_addr *ip, unsigned prefix);

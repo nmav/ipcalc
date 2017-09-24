@@ -101,6 +101,23 @@ extern char __attribute__((warn_unused_result)) *safe_strdup(const char *str)
 	return ret;
 }
 
+extern int __attribute__((__format__(printf, 2, 3)))
+safe_asprintf(char **strp, const char *fmt, ...)
+{
+	int ret;
+	va_list args;
+
+	va_start(args, fmt);
+	ret = vasprintf(&(*strp), fmt, args);
+	va_end(args);
+	if (ret < 0) {
+		error_at_line(EXIT_FAILURE, errno, __FILE__, __LINE__, "memory allocation failure");
+	}
+	return ret;
+}
+
+
+
 /*!
   \fn uint32_t prefix2mask(int bits)
   \brief creates a netmask from a specified number of bits
@@ -609,7 +626,7 @@ int get_ipv4_info(struct ipcalc_control *ctl, char *ipStr, int prefix,
 
 		tmp = NULL;
 		for (; i > 0; i--) {
-			if (asprintf(&tmp, "%s.0", ipStr) == -1) {
+			if (safe_asprintf(&tmp, "%s.0", ipStr) == -1) {
 				error_at_line(EXIT_FAILURE, errno, __FILE__, __LINE__,
 					"memory allocation failure");
 			}
@@ -987,7 +1004,7 @@ static char *generate_ip_network(const struct ipcalc_control *ctl, unsigned pref
 			return NULL;
 	}
 
-	if (asprintf(&p, "%s/%u", ipbuf, prefix) == -1)
+	if (safe_asprintf(&p, "%s/%u", ipbuf, prefix) == -1)
 		return NULL;
 
 	return p;

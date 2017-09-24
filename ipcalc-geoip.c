@@ -62,21 +62,6 @@ static GeoIP_record_by_ipnum_v6_func pGeoIP_record_by_ipnum_v6;
 
 #define LIBNAME LIBPATH"/libGeoIP.so.1"
 
-static int __attribute__((__format__(printf, 2, 3)))
-safe_asprintf(char **strp, const char *fmt, ...)
-{
-	int ret;
-	va_list args;
-
-	va_start(args, fmt);
-	ret = vasprintf(&(*strp), fmt, args);
-	va_end(args);
-	if (ret < 0) {
-		error_at_line(EXIT_FAILURE, errno, __FILE__, __LINE__, "memory allocation failure");
-	}
-	return ret;
-}
-
 int geo_setup(struct ipcalc_control *ctl)
 {
 	static int ret = 0;
