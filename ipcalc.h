@@ -17,17 +17,51 @@
  *   Nikos Mavrogiannopoulos <nmav@redhat.com>
  */
 
+struct ipcalc_control {
+	void *ld;
+	char *hostname;
+	char *randomStr;
+	char *splitStr;
+	int family;
+	unsigned int
+		resolve_host:1,
+		revolve_ip:1,
+		check_address:1,
+		show_info:1,
+		show_broadcast:1,
+		show_netmask:1,
+		show_network:1,
+		show_prefix:1,
+		show_min_addr:1,
+		show_max_addr:1,
+		show_addresses:1,
+		show_address_space:1,
 #ifdef USE_GEOIP
-void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char  **coord);
-void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **city, char **coord);
-int geo_setup(void);
+		get_geoip:1,
+		show_geoip:1,
+#endif
+		show_all:1,
+		show_reverse:1,
+		assume_class_prefix:1,
+		split:1,
+		beSilent:1,
+		colors:1;
+};
+
+#ifdef USE_GEOIP
+void geo_ipv4_lookup(struct ipcalc_control *ctl, struct in_addr ip, char **country, char **ccode, char **city, char  **coord);
+void geo_ipv6_lookup(struct ipcalc_control *ctl, struct in6_addr *ip, char **country, char **ccode, char **city, char **coord);
+int geo_setup(struct ipcalc_control *ctl);
+int geo_end(struct ipcalc_control *ctl);
 #else
-# define geo_ipv4_lookup(x,y,z,w,a)
-# define geo_ipv6_lookup(x,y,z,w,a)
-# define geo_setup() -1
+# define geo_ipv4_lookup(x,y,z,w,a,b)
+# define geo_ipv6_lookup(x,y,z,w,a,b)
+# define geo_setup(a) -1
+# define geo_end(a)
 #endif
 
 char __attribute__((warn_unused_result)) *safe_strdup(const char *str);
+int __attribute__((__format__(printf, 2, 3))) safe_asprintf(char **strp, const char *fmt, ...);
 
 char *calc_reverse_dns4(struct in_addr ip, unsigned prefix, struct in_addr net, struct in_addr bcast);
 char *calc_reverse_dns6(struct in6_addr *ip, unsigned prefix);
@@ -61,18 +95,15 @@ typedef struct ip_info_st {
 	const char *class;
 } ip_info_st;
 
-void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info);
-void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info);
+void show_split_networks_v4(const struct ipcalc_control *ctl, unsigned split_prefix, const struct ip_info_st *info);
+void show_split_networks_v6(const struct ipcalc_control *ctl, unsigned split_prefix, const struct ip_info_st *info);
 
 #define KBLUE  "\x1B[34m"
 #define KMAG   "\x1B[35m"
 #define KRESET "\033[0m"
 
-#define default_printf(...) color_printf(KBLUE, __VA_ARGS__)
-#define dist_printf(...) color_printf(KMAG, __VA_ARGS__)
-
 void
-__attribute__ ((format(printf, 3, 4)))
-color_printf(const char *color, const char *title, const char *fmt, ...);
+__attribute__ ((format(printf, 4, 5)))
+color_printf(const struct ipcalc_control *ctl, const char *color, const char *title, const char *fmt, ...);
 
 extern int beSilent;

@@ -34,24 +34,24 @@ fail() {
 }
 
 TestSuccess() {
-	echo -n "Checking $@... "
+	echo -n "Checking $*... "
 	output=$(sh -c "$1" 2>&1)
 	rc=$?
-	[ $rc -eq 0 ] && ok || fail $output
+	if [ $rc -eq 0 ]; then ok; else fail "$output"; fi
 }
 
 TestFailure() {
-	echo -n "Checking $@... "
+	echo -n "Checking $*... "
 	output=$(sh -c "$1" 2>&1)
 	rc=$?
-	[ $rc -eq 0 ] && fail $output || ok 
+	if [ $rc -eq 0 ]; then fail "$output"; else ok; fi
 }
 
 TestOutput() {
 	echo -n "Checking $1... "
 	output=$(sh -c "$1" 2>&1)
 	rc=$?
-	[ "$output" = "$2" ] && ok || fail $output
+	if [ "$output" = "$2" ]; then ok; else fail "$output"; fi
 }
 
 echo -n "Checking for ipcalc binary... "

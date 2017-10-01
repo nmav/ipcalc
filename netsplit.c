@@ -32,6 +32,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdint.h>
+#include <error.h>
 
 #include "ipcalc.h"
 
@@ -43,7 +44,7 @@ static const char *numtoquad(uint32_t num)
 	return inet_ntop(AF_INET, &num, quad, sizeof(quad));
 }
 
-void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info)
+void show_split_networks_v4(const struct ipcalc_control *ctl, unsigned split_prefix, const struct ip_info_st *info)
 {
 	char buf[64];
 	uint32_t diff, start, end;
@@ -54,25 +55,28 @@ void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info
 	struct in_addr net, broadcast;
 
 	if (splitmask < nmask) {
-		if (!beSilent)
-			fprintf(stderr, "Cannot subnet to /%d with this base network, use a prefix > /%d\n",
+		if (!ctl->beSilent)
+			error(EXIT_FAILURE, 0,
+				"cannot subnet to /%d with this base network, use a prefix > /%d",
 				split_prefix, info->prefix);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	printf("[Split networks]\n");
 
 	if (inet_pton(AF_INET, info->network, &net) <= 0) {
-		if (!beSilent)
-			fprintf(stderr, "ipcalc: bad IPv4 address: %s\n", info->network);
-		exit(1);
+		if (!ctl->beSilent)
+			error(EXIT_FAILURE, 0,
+				"bad IPv4 address: %s", info->network);
+		exit(EXIT_FAILURE);
 	}
 	net.s_addr = ntohl(net.s_addr);
 
 	if (inet_pton(AF_INET, info->broadcast, &broadcast) <= 0) {
-		if (!beSilent)
-			fprintf(stderr, "ipcalc: bad broadcast address: %s\n", info->broadcast);
-		exit(1);
+		if (!ctl->beSilent)
+			error(EXIT_FAILURE, 0,
+				"bad broadcast address: %s", info->broadcast);
+		exit(EXIT_FAILURE);
 	}
 	broadcast.s_addr = ntohl(broadcast.s_addr);
 
@@ -98,7 +102,7 @@ void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info
 	end = net.s_addr + diff - 1;
 	count = 0;
 	while (1) {
-		default_printf("Network:\t", "%s/%u\n", numtoquad(start), split_prefix);
+		color_printf(ctl, KBLUE, "Network:\t", "%s/%u\n", numtoquad(start), split_prefix);
 
 		start += diff;
 		if (end == 0xffffffff || end >= broadcast.s_addr)
@@ -107,8 +111,8 @@ void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info
 		count++;
 	}
 
-	dist_printf("\nTotal:  \t", "%u\n", count);
-	dist_printf("Hosts/Net:\t", "%s\n", ipv4_prefix_to_hosts(buf, sizeof(buf), split_prefix));
+	color_printf(ctl, KMAG, "\nTotal:  \t", "%u\n", count);
+	color_printf(ctl, KMAG, "Hosts/Net:\t", "%s\n", ipv4_prefix_to_hosts(buf, sizeof(buf), split_prefix));
 }
 
 static const char *ipv6tostr(struct in6_addr *ip)
@@ -127,7 +131,7 @@ static void v6add(struct in6_addr *a, const struct in6_addr *b)
 		tmp = (uint32_t)a->s6_addr[i] + (uint32_t)b->s6_addr[i];
 		if (tmp > 0xff && i > 0) {
 			j = i - 1;
-			for (j=i-1;j>=0;j--) {
+			for (j = i - 1; j >= 0; j--) {
 				a->s6_addr[j]++;
 				if (a->s6_addr[j] != 0)
 					break;
@@ -138,7 +142,7 @@ static void v6add(struct in6_addr *a, const struct in6_addr *b)
 	}
 }
 
-void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info)
+void show_split_networks_v6(const struct ipcalc_control *ctl, unsigned split_prefix, const struct ip_info_st *info)
 {
 	int i, j, k;
 	unsigned count;
@@ -146,27 +150,27 @@ void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info
 	char buf[32];
 
 	if (inet_pton(AF_INET6, info->network, &net) <= 0) {
-		if (!beSilent)
-			fprintf(stderr, "ipcalc: bad IPv6 address: %s\n", info->network);
-		exit(1);
+		if (!ctl->beSilent)
+			error(EXIT_FAILURE, 0, "bad IPv6 network: %s", info->network);
+		exit(EXIT_FAILURE);
 	}
 
 	if (inet_pton(AF_INET6, info->hostmax, &netlast) <= 0) {
-		if (!beSilent)
-			fprintf(stderr, "ipcalc: bad IPv6 address: %s\n", info->hostmax);
-		exit(1);
+		if (!ctl->beSilent)
+			error(EXIT_FAILURE, 0, "bad IPv6 address: %s", info->hostmax);
+		exit(EXIT_FAILURE);
 	}
 
 	if (inet_pton(AF_INET6, info->netmask, &netmask) <= 0) {
-		if (!beSilent)
-			fprintf(stderr, "ipcalc: bad IPv6 mask: %s\n", info->netmask);
-		exit(1);
+		if (!ctl->beSilent)
+			error(EXIT_FAILURE, 0, "bad IPv6 mask: %s", info->netmask);
+		exit(EXIT_FAILURE);
 	}
 
 	if (ipv6_prefix_to_mask(split_prefix, &splitmask) < 0) {
-		if (!beSilent)
-			fprintf(stderr, "ipcalc: IPv6 prefix: %d\n", split_prefix);
-		exit(1);
+		if (!ctl->beSilent)
+			error(EXIT_FAILURE, 0, "bad IPv6 prefix: %d", split_prefix);
+		exit(EXIT_FAILURE);
 	}
 
 	i = 0;
@@ -180,10 +184,11 @@ void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info
 	} while (i < 16 && !j);
 
 	if (j == 2) {
-		if (!beSilent)
-			fprintf(stderr, "Cannot subnet to /%d with this base network, use a prefix > /%d\n",
+		if (!ctl->beSilent)
+			error(EXIT_FAILURE, 0,
+				"cannot subnet to /%d with this base network, use a prefix > /%d",
 				split_prefix, info->prefix);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	memset(&sdiff, 0, sizeof(sdiff));
@@ -206,13 +211,13 @@ void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info
 
 	i = count = 0;
 	while (!i) {
-		default_printf("Network:\t", "%s/%u\n", ipv6tostr(&start), split_prefix);
+		color_printf(ctl, KBLUE, "Network:\t", "%s/%u\n", ipv6tostr(&start), split_prefix);
 
 		v6add(&start, &sdiff);
 
 		j = 0;
-		for (k = 0; k < 16; k+=2)
-			if (end.s6_addr[k] != 0xff && end.s6_addr[k+1] != 0xff)
+		for (k = 0; k < 16; k += 2)
+			if (end.s6_addr[k] != 0xff && end.s6_addr[k + 1] != 0xff)
 				j = 1;
 		if (!j)
 			i = 1;
@@ -237,7 +242,7 @@ void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info
 		count++;
 	}
 
-	dist_printf("\nTotal:  \t", "%u\n", count);
-	dist_printf("Hosts/Net:\t", "%s\n", ipv6_prefix_to_hosts(buf, sizeof(buf), split_prefix));
+	color_printf(ctl, KMAG, "\nTotal:  \t", "%u\n", count);
+	color_printf(ctl, KMAG, "Hosts/Net:\t", "%s\n", ipv6_prefix_to_hosts(buf, sizeof(buf), split_prefix));
 }
 

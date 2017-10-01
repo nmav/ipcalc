@@ -27,6 +27,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdarg.h>
+#include <error.h>
+#include <errno.h>
+
 #include "ipcalc.h"
 
 #ifdef USE_GEOIP
@@ -59,52 +62,41 @@ static GeoIP_record_by_ipnum_v6_func pGeoIP_record_by_ipnum_v6;
 
 #define LIBNAME LIBPATH"/libGeoIP.so.1"
 
-static int __attribute__((__format__(printf, 2, 3)))
-safe_asprintf(char **strp, const char *fmt, ...)
+int geo_setup(struct ipcalc_control *ctl)
 {
-	int ret;
-	va_list args;
-
-	va_start(args, fmt);
-	ret = vasprintf(&(*strp), fmt, args);
-	va_end(args);
-	if (ret < 0) {
-		fprintf(stderr, "Memory allocation failure\n");
-		exit(1);
-	}
-	return ret;
-}
-
-int geo_setup(void)
-{
-	static void *ld = NULL;
 	static int ret = 0;
 	static char err[256] = {0};
 
-	if (ld != NULL || ret != 0) {
-	    	if (!beSilent && err[0] != 0) {
+	if (ctl->ld != NULL || ret != 0) {
+		if (!ctl->beSilent && err[0] != 0) {
 	    		fprintf(stderr, "%s", err);
 		}
 		return ret;
 	}
 
-	ld = dlopen(LIBNAME, RTLD_LAZY);
-	if (ld == NULL) {
-		snprintf(err, sizeof(err), "ipcalc: could not open %s\n", LIBNAME);
+	ctl->ld = dlopen(LIBNAME, RTLD_LAZY);
+	if (ctl->ld == NULL) {
+		char *errmsg;
+
+		errmsg = dlerror();
+		if (errmsg)
+			snprintf(err, sizeof(err), "ipcalc: could not open %s: %s\n", LIBNAME, errmsg);
+		else
+			snprintf(err, sizeof(err), "ipcalc: could not open %s\n", LIBNAME);
 		ret = -1;
 		goto exit;
 	}
 
-	p_GeoIP_setup_dbfilename = dlsym(ld, "_GeoIP_setup_dbfilename");
+	p_GeoIP_setup_dbfilename = dlsym(ctl->ld, "_GeoIP_setup_dbfilename");
 
-	pGeoIP_open_type = dlsym(ld, "GeoIP_open_type");
-	pGeoIP_country_name_by_id = dlsym(ld, "GeoIP_country_name_by_id");
-	pGeoIP_delete = dlsym(ld, "GeoIP_delete");
-	pGeoIP_record_by_ipnum = dlsym(ld, "GeoIP_record_by_ipnum");
-	pGeoIP_id_by_ipnum = dlsym(ld, "GeoIP_id_by_ipnum");
-	pGeoIP_id_by_ipnum_v6 = dlsym(ld, "GeoIP_id_by_ipnum_v6");
-	pGeoIP_record_by_ipnum_v6 = dlsym(ld, "GeoIP_record_by_ipnum_v6");
-	pGeoIP_code_by_id = dlsym(ld, "GeoIP_code_by_id");
+	pGeoIP_open_type = dlsym(ctl->ld, "GeoIP_open_type");
+	pGeoIP_country_name_by_id = dlsym(ctl->ld, "GeoIP_country_name_by_id");
+	pGeoIP_delete = dlsym(ctl->ld, "GeoIP_delete");
+	pGeoIP_record_by_ipnum = dlsym(ctl->ld, "GeoIP_record_by_ipnum");
+	pGeoIP_id_by_ipnum = dlsym(ctl->ld, "GeoIP_id_by_ipnum");
+	pGeoIP_id_by_ipnum_v6 = dlsym(ctl->ld, "GeoIP_id_by_ipnum_v6");
+	pGeoIP_record_by_ipnum_v6 = dlsym(ctl->ld, "GeoIP_record_by_ipnum_v6");
+	pGeoIP_code_by_id = dlsym(ctl->ld, "GeoIP_code_by_id");
 
 	if (pGeoIP_open_type == NULL || pGeoIP_country_name_by_id == NULL ||
 	    pGeoIP_delete == NULL || pGeoIP_record_by_ipnum == NULL ||
@@ -118,6 +110,13 @@ int geo_setup(void)
 	ret = 0;
  exit:
 	return ret;
+}
+
+int geo_end(struct ipcalc_control *ctl)
+{
+	if (ctl->ld)
+		return dlclose(ctl->ld);
+	return 0;
 }
 
 # else
@@ -134,14 +133,15 @@ extern void _GeoIP_setup_dbfilename(void);
 #  define pGeoIP_code_by_id GeoIP_code_by_id
 # endif
 
-void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char **coord)
+void geo_ipv4_lookup(struct ipcalc_control *ctl, struct in_addr ip,
+		     char **country, char **ccode, char **city, char **coord)
 {
 	GeoIP *gi;
 	GeoIPRecord *gir;
 	int country_id;
 	const char *p;
 
-	if (geo_setup() != 0)
+	if (geo_setup(ctl) != 0)
 		return;
 
 	ip.s_addr = ntohl(ip.s_addr);
@@ -200,14 +200,15 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **cit
 	return;
 }
 
-void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **city, char **coord)
+void geo_ipv6_lookup(struct ipcalc_control *ctl, struct in6_addr *ip,
+		     char **country, char **ccode, char **city, char **coord)
 {
 	GeoIP *gi;
 	GeoIPRecord *gir;
 	int country_id;
 	const char *p;
 
-	if (geo_setup() != 0)
+	if (geo_setup(ctl) != 0)
 		return;
 
 	p_GeoIP_setup_dbfilename();

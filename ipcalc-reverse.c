@@ -45,46 +45,46 @@ char *calc_reverse_dns4(struct in_addr ip, unsigned prefix, struct in_addr netwo
 
 #ifdef USE_RFC2317_STYLE
 	if (prefix == 32) {
-		ret = asprintf(&str, "%u.%u.%u.%u.in-addr.arpa.", byte4, byte3, byte2, byte1);
+		ret = safe_asprintf(&str, "%u.%u.%u.%u.in-addr.arpa.", byte4, byte3, byte2, byte1);
 	} else if (prefix == 24) {
-		ret = asprintf(&str, "%u.%u.%u.in-addr.arpa.", byte3, byte2, byte1);
+		ret = safe_asprintf(&str, "%u.%u.%u.in-addr.arpa.", byte3, byte2, byte1);
 	} else if (prefix == 16) {
-		ret = asprintf(&str, "%u.%u.in-addr.arpa.", byte2, byte1);
+		ret = safe_asprintf(&str, "%u.%u.in-addr.arpa.", byte2, byte1);
 	} else if (prefix == 8) {
-		ret = asprintf(&str, "%u.in-addr.arpa.", byte1);
+		ret = safe_asprintf(&str, "%u.in-addr.arpa.", byte1);
 	} else if (prefix > 24) {
-		ret = asprintf(&str, "%u/%u.%u.%u.%u.in-addr.arpa.", byte4, prefix, byte3, byte2, byte1);
+		ret = safe_asprintf(&str, "%u/%u.%u.%u.%u.in-addr.arpa.", byte4, prefix, byte3, byte2, byte1);
 	} else if (prefix > 16) {
-		ret = asprintf(&str, "%u/%u.%u.%u.in-addr.arpa.", byte3, prefix, byte2, byte1);
+		ret = safe_asprintf(&str, "%u/%u.%u.%u.in-addr.arpa.", byte3, prefix, byte2, byte1);
 	} else if (prefix > 8) {
-		ret = asprintf(&str, "%u/%u.%u.in-addr.arpa.", byte2, prefix, byte1);
+		ret = safe_asprintf(&str, "%u/%u.%u.in-addr.arpa.", byte2, prefix, byte1);
 	}
 #else
 	if (prefix == 32) {
-		ret = asprintf(&str, "%u.%u.%u.%u.in-addr.arpa.", byte4, byte3, byte2, byte1);
+		ret = safe_asprintf(&str, "%u.%u.%u.%u.in-addr.arpa.", byte4, byte3, byte2, byte1);
 	} else if (prefix == 24) {
-		ret = asprintf(&str, "%u.%u.%u.in-addr.arpa.", byte3, byte2, byte1);
+		ret = safe_asprintf(&str, "%u.%u.%u.in-addr.arpa.", byte3, byte2, byte1);
 	} else if (prefix == 16) {
-		ret = asprintf(&str, "%u.%u.in-addr.arpa.", byte2, byte1);
+		ret = safe_asprintf(&str, "%u.%u.in-addr.arpa.", byte2, byte1);
 	} else if (prefix == 8) {
-		ret = asprintf(&str, "%u.in-addr.arpa.", byte1);
+		ret = safe_asprintf(&str, "%u.in-addr.arpa.", byte1);
 	} else if (prefix > 24) {
 		unsigned min = (ntohl(network.s_addr)) & 0xff;
 		unsigned max = (ntohl(broadcast.s_addr)) & 0xff;
-		ret = asprintf(&str, "%u-%u.%u.%u.%u.in-addr.arpa.", min, max, byte3, byte2, byte1);
+		ret = safe_asprintf(&str, "%u-%u.%u.%u.%u.in-addr.arpa.", min, max, byte3, byte2, byte1);
 	} else if (prefix > 16) {
 		unsigned min = (ntohl(network.s_addr) >> 8) & 0xff;
 		unsigned max = (ntohl(broadcast.s_addr) >> 8) & 0xff;
-		ret = asprintf(&str, "%u-%u.%u.%u.in-addr.arpa.", min, max, byte2, byte1);
+		ret = safe_asprintf(&str, "%u-%u.%u.%u.in-addr.arpa.", min, max, byte2, byte1);
 	} else if (prefix > 8) {
 		unsigned min = (ntohl(network.s_addr) >> 16) & 0xff;
 		unsigned max = (ntohl(broadcast.s_addr) >> 16) & 0xff;
-		ret = asprintf(&str, "%u-%u.%u.in-addr.arpa.", min, max, byte1);
+		ret = safe_asprintf(&str, "%u-%u.%u.in-addr.arpa.", min, max, byte1);
 	}
 #endif
 
 	if (ret == -1)
-	    return NULL;
+		return NULL;
 	return str;
 }
 
@@ -101,26 +101,26 @@ char *calc_reverse_dns6(struct in6_addr *ip, unsigned prefix)
 {
 	unsigned i, j = 0;
 	char str[256];
-	unsigned max = prefix/8;
+	unsigned max = prefix / 8;
 
 	if (prefix % 4 != 0)
 		return NULL;
 
 	if (prefix % 8 == 4) {
-		str[j++] = hexchar(ip->s6_addr[(prefix+4)/8-1] >> 4);
+		str[j++] = hexchar(ip->s6_addr[(prefix + 4) / 8 - 1] >> 4);
 		str[j++] = '.';
 	}
 
-	for (i=0;i<max;i++) {
-		str[j++] = hexchar(ip->s6_addr[max-1-i] & 0xf);
+	for (i = 0; i < max; i++) {
+		str[j++] = hexchar(ip->s6_addr[max - 1 - i] & 0xf);
 		str[j++] = '.';
 
-		str[j++] = hexchar(ip->s6_addr[max-1-i] >> 4);
+		str[j++] = hexchar(ip->s6_addr[max - 1 - i] >> 4);
 		str[j++] = '.';
 
 	}
 
 	strcpy(&str[j], "ip6.arpa.");
 
-	return strdup(str);
+	return safe_strdup(str);
 }
