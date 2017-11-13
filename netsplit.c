@@ -60,7 +60,8 @@ void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info
 		exit(1);
 	}
 
-	printf("[Split networks]\n");
+	if (!beSilent)
+		printf("[Split networks]\n");
 
 	if (inet_pton(AF_INET, info->network, &net) <= 0) {
 		if (!beSilent)
@@ -98,7 +99,10 @@ void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info
 	end = net.s_addr + diff - 1;
 	count = 0;
 	while (1) {
-		default_printf("Network:\t", "%s/%u\n", numtoquad(start), split_prefix);
+		if (!beSilent)
+			default_printf("Network:\t", "%s/%u\n", numtoquad(start), split_prefix);
+		else
+			printf("%s/%u\n", numtoquad(start), split_prefix);
 
 		start += diff;
 		if (end == 0xffffffff || end >= broadcast.s_addr)
@@ -107,8 +111,10 @@ void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info
 		count++;
 	}
 
-	dist_printf("\nTotal:  \t", "%u\n", count);
-	dist_printf("Hosts/Net:\t", "%s\n", ipv4_prefix_to_hosts(buf, sizeof(buf), split_prefix));
+	if (!beSilent) {
+		dist_printf("\nTotal:  \t", "%u\n", count);
+		dist_printf("Hosts/Net:\t", "%s\n", ipv4_prefix_to_hosts(buf, sizeof(buf), split_prefix));
+	}
 }
 
 static const char *ipv6tostr(struct in6_addr *ip)
