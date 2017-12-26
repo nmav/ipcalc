@@ -1,3 +1,8 @@
+* Version 0.2.1 (released 2017-12-26)
+- Added a more silent version of --split when combined with
+  --silent option.
+
+
 * Version 0.2.0 (released 2017-05-15)
 - Added the --split (-S) option. This allows splitting networks
   into smaller chunks.
