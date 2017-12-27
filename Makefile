@@ -28,6 +28,11 @@ ipcalc: ipcalc.c ipcalc-geoip.c ipcalc-reverse.c netsplit.c
 clean:
 	rm -f ipcalc
 
+SPLIT_LINES="$(shell ./ipcalc -S 29 192.168.5.0/24 | grep ^Network | wc -l)"
+SPLIT_TOTAL="$(shell ./ipcalc -S 29 192.168.5.0/24|grep ^Total|cut -d ':' -f 2|tr -d '[:space:]')"
+SPLIT_LINES_IPV6="$(shell ./ipcalc -S 120 fcfa:b4ca:f1d8:125b:dc00::/112 | grep ^Network | wc -l)"
+SPLIT_TOTAL_IPV6="$(shell ./ipcalc -S 120 fcfa:b4ca:f1d8:125b:dc00::/112|grep ^Total|cut -d ':' -f 2|tr -d '[:space:]')"
+
 check: ipcalc
 	./ipcalc -bmnp 12.15.1.5 --class-prefix > out.tmp && cmp out.tmp tests/12.15.1.5
 	./ipcalc -bmnp 129.15.31.5 --class-prefix > out.tmp && cmp out.tmp tests/129.15.31.5
@@ -60,4 +65,6 @@ check: ipcalc
 	./ipcalc --addrspace -bmnp fd0b:a336:4e7d::/48 > out.tmp && cmp out.tmp tests/fd0b:a336:4e7d::-48
 	./ipcalc -i 2a03:2880:20:4f06:face:b00c:0:1 > out.tmp && cmp out.tmp tests/i-2a03:2880:20:4f06:face:b00c:0:1
 	./ipcalc -i fd0b:a336:4e7d::/48 > out.tmp && cmp out.tmp tests/i-fd0b:a336:4e7d::-48
+	test "$(SPLIT_LINES_IPV6)" = "$(SPLIT_TOTAL_IPV6)"
+	test "$(SPLIT_LINES)" = "$(SPLIT_TOTAL)"
 	./ipcalc-tests
