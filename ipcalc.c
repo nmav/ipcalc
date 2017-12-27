@@ -577,28 +577,6 @@ char *ipv6_prefix_to_hosts(char *hosts, unsigned hosts_size, unsigned prefix)
 	return hosts;
 }
 
-#define FLAG_RESOLVE_HOST 1
-#define FLAG_RESOLVE_IP (1<<1)
-#define FLAG_CHECK_ADDRESS (1<<2)
-#define FLAG_SHOW_INFO (1<<3)
-#define FLAG_SHOW_BROADCAST (1<<6)
-#define FLAG_SHOW_NETMASK (1<<7)
-#define FLAG_SHOW_NETWORK (1<<8)
-#define FLAG_SHOW_PREFIX (1<<9)
-#define FLAG_SHOW_MINADDR (1<<10)
-#define FLAG_SHOW_MAXADDR (1<<11)
-#define FLAG_SHOW_ADDRESSES (1<<12)
-#define FLAG_SHOW_ADDRSPACE (1<<13)
-#define FLAG_GET_GEOIP (1<<14)
-#define FLAG_SHOW_GEOIP ((1<<15)|FLAG_GET_GEOIP)
-#define FLAG_SHOW_ALL_INFO ((1<<16)|FLAG_SHOW_INFO)
-#define FLAG_SHOW_REVERSE (1<<17)
-#define FLAG_ASSUME_CLASS_PREFIX (1<<18)
-#define FLAG_SPLIT (1<<19)
-
-/* Flags that are not real options */
-#define FLAGS_TO_IGNORE (FLAG_GET_GEOIP|FLAG_SPLIT|FLAG_ASSUME_CLASS_PREFIX|(1<<16))
-#define FLAGS_TO_IGNORE_MASK (~FLAGS_TO_IGNORE)
 
 static
 int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
@@ -1067,6 +1045,7 @@ int str_to_prefix(int *ipv6, const char *prefixStr, unsigned fix)
 #define OPT_USAGE 6
 #define OPT_REVERSE 7
 #define OPT_CLASS_PREFIX 8
+#define OPT_NO_DECORATE 9
 
 static const struct option long_options[] = {
 	{"check", 0, 0, 'c'},
@@ -1092,6 +1071,7 @@ static const struct option long_options[] = {
 	{"addresses", 0, 0, OPT_ADDRESSES},
 	{"addrspace", 0, 0, OPT_ADDRSPACE},
 	{"silent", 0, 0, 's'},
+	{"no-decorate", 0, 0, OPT_NO_DECORATE},
 	{"version", 0, 0, 'v'},
 	{"help", 0, 0, '?'},
 	{"usage", 0, 0, OPT_USAGE},
@@ -1135,6 +1115,7 @@ void usage(unsigned verbose)
 		fprintf(stderr, "Other options:\n");
 		fprintf(stderr, "      --class-prefix              When specified the default prefix will be determined\n");
 		fprintf(stderr, "                                  by the IPv4 address class\n");
+		fprintf(stderr, "      --no-decorate               Print only the requested information\n");
 		fprintf(stderr, "  -s, --silent                    Don't ever display error messages\n");
 		fprintf(stderr, "  -v, --version                   Display program version\n");
 		fprintf(stderr, "  -?, --help                      Show this help message\n");
@@ -1269,6 +1250,9 @@ int main(int argc, char **argv)
 				break;
 			case OPT_ADDRSPACE:
 				flags |= FLAG_SHOW_ADDRSPACE;
+				break;
+			case OPT_NO_DECORATE:
+				flags |= FLAG_NO_DECORATE;
 				break;
 			case 's':
 				beSilent = 1;
@@ -1591,9 +1575,9 @@ int main(int argc, char **argv)
 
 	if (flags & FLAG_SPLIT) {
 		if (familyIPv6) {
-			show_split_networks_v6(splitPrefix, &info);
+			show_split_networks_v6(splitPrefix, &info, flags);
 		} else {
-			show_split_networks_v4(splitPrefix, &info);
+			show_split_networks_v4(splitPrefix, &info, flags);
 		}
 	}
 

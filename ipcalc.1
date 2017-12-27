@@ -41,8 +41,8 @@ readable format. That includes GeoIP information.
 \fB\-S\fR, \fB\-\-split\fR
 Split the provided network using the specified prefix or netmask. That is,
 split up the network into smaller chunks of a specified prefix. When
-combined with silent mode (\fB\-s), the split networks will be printed
-in raw form.
+combined with no-decorate mode (\fB\-\-no\-decorate\fR), the split networks
+will be printed in raw form.
 
 .TP
 \fB\-r\fR, \fB\-\-random-private\fR
@@ -127,6 +127,12 @@ The variable exposed is ADDRESSES.
 \fB\   \fR \fB\-\-addrspace\fR 
 Display address space allocation information for the provided network.
 The variable exposed is ADDRSPACE.
+
+.TP
+\fB\   \fR \fB\-\-no\-decorate\fR
+Print only the requested information. That when combined with
+split networks option, will only print the networks without any
+additions for readability.
 
 .TP
 \fB\-s\fR, \fB\-\-silent\fR 

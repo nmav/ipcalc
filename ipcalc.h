@@ -61,8 +61,32 @@ typedef struct ip_info_st {
 	const char *class;
 } ip_info_st;
 
-void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info);
-void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info);
+#define FLAG_RESOLVE_HOST 1
+#define FLAG_RESOLVE_IP (1<<1)
+#define FLAG_CHECK_ADDRESS (1<<2)
+#define FLAG_SHOW_INFO (1<<3)
+#define FLAG_SHOW_BROADCAST (1<<6)
+#define FLAG_SHOW_NETMASK (1<<7)
+#define FLAG_SHOW_NETWORK (1<<8)
+#define FLAG_SHOW_PREFIX (1<<9)
+#define FLAG_SHOW_MINADDR (1<<10)
+#define FLAG_SHOW_MAXADDR (1<<11)
+#define FLAG_SHOW_ADDRESSES (1<<12)
+#define FLAG_SHOW_ADDRSPACE (1<<13)
+#define FLAG_GET_GEOIP (1<<14)
+#define FLAG_SHOW_GEOIP ((1<<15)|FLAG_GET_GEOIP)
+#define FLAG_SHOW_ALL_INFO ((1<<16)|FLAG_SHOW_INFO)
+#define FLAG_SHOW_REVERSE (1<<17)
+#define FLAG_ASSUME_CLASS_PREFIX (1<<18)
+#define FLAG_SPLIT (1<<19)
+#define FLAG_NO_DECORATE (1<<20)
+
+/* Flags that are not real options */
+#define FLAGS_TO_IGNORE (FLAG_GET_GEOIP|FLAG_SPLIT|FLAG_NO_DECORATE|FLAG_ASSUME_CLASS_PREFIX|(1<<16))
+#define FLAGS_TO_IGNORE_MASK (~FLAGS_TO_IGNORE)
+
+void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info, unsigned flags);
+void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info, unsigned flags);
 
 #define KBLUE  "\x1B[34m"
 #define KMAG   "\x1B[35m"

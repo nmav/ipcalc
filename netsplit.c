@@ -43,7 +43,7 @@ static const char *numtoquad(uint32_t num)
 	return inet_ntop(AF_INET, &num, quad, sizeof(quad));
 }
 
-void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info)
+void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info, unsigned flags)
 {
 	char buf[64];
 	uint32_t diff, start, end;
@@ -60,7 +60,7 @@ void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info
 		exit(1);
 	}
 
-	if (!beSilent)
+	if (!(flags & FLAG_NO_DECORATE))
 		printf("[Split networks]\n");
 
 	if (inet_pton(AF_INET, info->network, &net) <= 0) {
@@ -99,7 +99,7 @@ void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info
 	end = net.s_addr + diff - 1;
 	count = 0;
 	while (1) {
-		if (!beSilent)
+		if (!(flags & FLAG_NO_DECORATE))
 			default_printf("Network:\t", "%s/%u\n", numtoquad(start), split_prefix);
 		else
 			printf("%s/%u\n", numtoquad(start), split_prefix);
@@ -111,7 +111,7 @@ void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info
 		count++;
 	}
 
-	if (!beSilent) {
+	if (!(flags & FLAG_NO_DECORATE)) {
 		dist_printf("\nTotal:  \t", "%u\n", count);
 		dist_printf("Hosts/Net:\t", "%s\n", ipv4_prefix_to_hosts(buf, sizeof(buf), split_prefix));
 	}
@@ -144,7 +144,7 @@ static void v6add(struct in6_addr *a, const struct in6_addr *b)
 	}
 }
 
-void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info)
+void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info, unsigned flags)
 {
 	int i, j, k;
 	unsigned count;
