@@ -104,11 +104,11 @@ void show_split_networks_v4(unsigned split_prefix, const struct ip_info_st *info
 		else
 			printf("%s/%u\n", numtoquad(start), split_prefix);
 
+		count++;
 		start += diff;
 		if (end == 0xffffffff || end >= broadcast.s_addr)
 			break;
 		end += diff;
-		count++;
 	}
 
 	if (!(flags & FLAG_NO_DECORATE)) {
