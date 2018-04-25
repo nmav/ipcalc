@@ -17,6 +17,9 @@
  *   Nikos Mavrogiannopoulos <nmav@redhat.com>
  */
 
+#ifndef _IPCALC_H
+#define _IPCALC_H
+
 #ifdef USE_GEOIP
 void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char  **coord);
 void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **city, char **coord);
@@ -100,3 +103,5 @@ __attribute__ ((format(printf, 3, 4)))
 color_printf(const char *color, const char *title, const char *fmt, ...);
 
 extern int beSilent;
+
+#endif
