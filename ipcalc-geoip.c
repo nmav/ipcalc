@@ -34,6 +34,8 @@
 # include <GeoIP.h>
 # include <GeoIPCity.h>
 
+#define GEOIP_SILENCE 16	/* fix libgeoip < 1.6.3 */
+
 # ifdef USE_DYN_GEOIP
 #  include <dlfcn.h>
 
