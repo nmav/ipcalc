@@ -9,5 +9,11 @@ before_script:
   - sudo apt-get update -qq
   - sudo apt-get install -qq libpopt-dev libgeoip-dev
 
-script: CFLAGS="-O2 -g -Werror" LIBS=-lrt USE_GEOIP=no LIBPATH=/usr/lib/x86_64-linux-gnu make && make check
+env:
+  matrix:
+    - CFLAGS="-O2 -g -Werror" LIBS="-lrt" LIBPATH=/usr/lib/x86_64-linux-gnu USE_GEOIP=no  USE_DYN_GEOIP=no
+    - CFLAGS="-O2 -g -Werror" LIBS="-lrt" LIBPATH=/usr/lib/x86_64-linux-gnu USE_GEOIP=yes USE_DYN_GEOIP=no
+    - CFLAGS="-O2 -g -Werror" LIBS="-lrt" LIBPATH=/usr/lib/x86_64-linux-gnu USE_GEOIP=yes USE_DYN_GEOIP=yes
+
+script: make && make check && make clean
 
