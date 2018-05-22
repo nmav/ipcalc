@@ -34,6 +34,10 @@
 # include <GeoIP.h>
 # include <GeoIPCity.h>
 
+#ifndef GEOIP_SILENCE
+#define GEOIP_SILENCE 0	/* fix libgeoip < 1.6.3 */
+#endif
+
 # ifdef USE_DYN_GEOIP
 #  include <dlfcn.h>
 
@@ -58,22 +62,6 @@ static GeoIP_id_by_ipnum_v6_func pGeoIP_id_by_ipnum_v6;
 static GeoIP_record_by_ipnum_v6_func pGeoIP_record_by_ipnum_v6;
 
 #define LIBNAME LIBPATH"/libGeoIP.so.1"
-
-static int __attribute__((__format__(printf, 2, 3)))
-safe_asprintf(char **strp, const char *fmt, ...)
-{
-	int ret;
-	va_list args;
-
-	va_start(args, fmt);
-	ret = vasprintf(&(*strp), fmt, args);
-	va_end(args);
-	if (ret < 0) {
-		fprintf(stderr, "Memory allocation failure\n");
-		exit(1);
-	}
-	return ret;
-}
 
 int geo_setup(void)
 {
@@ -133,6 +121,22 @@ extern void _GeoIP_setup_dbfilename(void);
 #  define pGeoIP_record_by_ipnum_v6 GeoIP_record_by_ipnum_v6
 #  define pGeoIP_code_by_id GeoIP_code_by_id
 # endif
+
+static int __attribute__((__format__(printf, 2, 3)))
+safe_asprintf(char **strp, const char *fmt, ...)
+{
+	int ret;
+	va_list args;
+
+	va_start(args, fmt);
+	ret = vasprintf(&(*strp), fmt, args);
+	va_end(args);
+	if (ret < 0) {
+		fprintf(stderr, "Memory allocation failure\n");
+		exit(1);
+	}
+	return ret;
+}
 
 void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char **coord)
 {
