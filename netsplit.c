@@ -208,11 +208,15 @@ void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info
 	tmpaddr.s6_addr[15] = 1;
 	v6add(&sdiff, &tmpaddr);
 
-	printf("[Split networks]\n");
+	if (!(flags & FLAG_NO_DECORATE))
+		printf("[Split networks]\n");
 
 	i = count = 0;
 	while (!i) {
-		default_printf("Network:\t", "%s/%u\n", ipv6tostr(&start), split_prefix);
+		if (!(flags & FLAG_NO_DECORATE))
+			default_printf("Network:\t", "%s/%u\n", ipv6tostr(&start), split_prefix);
+		else
+			printf("%s/%u\n", ipv6tostr(&start), split_prefix);
 
 		v6add(&start, &sdiff);
 
@@ -243,7 +247,9 @@ void show_split_networks_v6(unsigned split_prefix, const struct ip_info_st *info
 		count++;
 	}
 
-	dist_printf("\nTotal:  \t", "%u\n", count);
-	dist_printf("Hosts/Net:\t", "%s\n", ipv6_prefix_to_hosts(buf, sizeof(buf), split_prefix));
+	if (!(flags & FLAG_NO_DECORATE)) {
+		dist_printf("\nTotal:  \t", "%u\n", count);
+		dist_printf("Hosts/Net:\t", "%s\n", ipv6_prefix_to_hosts(buf, sizeof(buf), split_prefix));
+	}
 }
 
