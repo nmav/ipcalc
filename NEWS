@@ -1,3 +1,9 @@
+* Version 0.2.3 (released 2018-05-26)
+- Fixed --no-decorate option with --split and IPv6 addresses.
+- Fixed build with USE_GEOIP=yes and USE_DYN_GEOIP=no (David Guglielmi)
+- Fixed build with libgeoip < 1.6.3
+
+
 * Version 0.2.2 (released 2017-12-27)
 - Added a more silent version of --split when combined with
   --no-decorate option.
