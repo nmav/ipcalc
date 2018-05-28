@@ -1,7 +1,9 @@
 USE_GEOIP?=yes
 USE_DYN_GEOIP?=yes
 
+ifneq (, $(findstring FreeBSD, $(UNAME)))
 LIBPATH?=/usr/lib64
+endif
 #LIBPATH=/usr/lib/x86_64-linux-gnu
 
 LIBS?=
@@ -12,7 +14,9 @@ LDFLAGS=$(LIBS)
 
 ifeq ($(USE_GEOIP),yes)
 ifeq ($(USE_DYN_GEOIP),yes)
+ifneq (, $(findstring FreeBSD, $(UNAME)))
 LDFLAGS+=-ldl
+endif
 CFLAGS+=-DUSE_GEOIP -DUSE_DYN_GEOIP -DLIBPATH="\"$(LIBPATH)\""
 else
 LDFLAGS+=-lGeoIP
