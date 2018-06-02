@@ -1088,6 +1088,7 @@ void usage(unsigned verbose)
 		fprintf(stderr, "  -S, --split=PREFIX              Split the provided network using the\n");
 		fprintf(stderr, "                                  provided prefix/netmask\n");
 		fprintf(stderr, "  -i, --info                      Print information on the provided IP address\n");
+		fprintf(stderr, "                                  (default)\n");
 		fprintf(stderr, "      --all-info                  Print verbose information on the provided IP\n");
 		fprintf(stderr, "                                  address\n");
 		fprintf(stderr, "      --reverse-dns               Print network in a the reverse DNS format\n");
