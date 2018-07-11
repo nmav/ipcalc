@@ -33,6 +33,12 @@ int geo_setup(void);
 # define geo_setup() -1
 #endif
 
+#ifdef USE_MAXMIND
+void mmdb_ip_lookup(const char *ip, char **country, char **ccode, char **city, char **coord);
+#else
+# define mmdb_ip_lookup(x,y,z,w,a)
+#endif
+
 char __attribute__((warn_unused_result)) *safe_strdup(const char *str);
 
 char *calc_reverse_dns4(struct in_addr ip, unsigned prefix, struct in_addr net, struct in_addr bcast);
