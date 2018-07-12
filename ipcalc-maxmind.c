@@ -1,8 +1,12 @@
+#define _GNU_SOURCE
+
 #include <maxminddb.h>
 #include <sys/socket.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "ipcalc.h"
 
 void process_result_from_mmdb_lookup(MMDB_entry_data_s *entry_data, int status, char **output)
 {
@@ -17,17 +21,16 @@ void process_result_from_mmdb_lookup(MMDB_entry_data_s *entry_data, int status, 
                 }
             }
         }
-    } else {
-        /* Fail silently */
-        return;
     }
+    /* Else fail silently */
 }
 
 void mmdb_ip_lookup(const char *ip, char **country, char **ccode, char **city, char **coord)
 {
     MMDB_s mmdb;
     MMDB_entry_data_s entry_data;
-    int gai_error, mmdb_error, status;
+    int gai_error, mmdb_error, status, coordinates=0;
+    double latitude, longitude;
 
     /* Open the system maxmind database with countries */
     status = MMDB_open("/usr/share/GeoIP/GeoLite2-Country.mmdb", MMDB_MODE_MMAP, &mmdb);
@@ -60,7 +63,28 @@ void mmdb_ip_lookup(const char *ip, char **country, char **ccode, char **city, c
             /* If the lookup was successfull and an entry was found */
             if (result.found_entry) {
                 memset(&entry_data, 0, sizeof(MMDB_entry_data_s));
-                // TODO: coordinates and city
+                // TODO: city is not available in the free database
+                status = MMDB_get_value(&result.entry, &entry_data, "location", "latitude", NULL);
+                if (MMDB_SUCCESS == status) {
+                    if (entry_data.has_data) {
+                        if (entry_data.type == MMDB_DATA_TYPE_DOUBLE) {
+                            latitude = entry_data.double_value;
+                            ++coordinates;
+                        }
+                    }
+                }
+                status = MMDB_get_value(&result.entry, &entry_data, "location", "longitude", NULL);
+                if (MMDB_SUCCESS == status) {
+                    if (entry_data.has_data) {
+                        if (entry_data.type == MMDB_DATA_TYPE_DOUBLE) {
+                            longitude = entry_data.double_value;
+                            ++coordinates;
+                        }
+                    }
+                }
+                if (coordinates == 2) {
+                    safe_asprintf(coord, "Latitude: %f, longitude: %f", latitude, longitude);
+                }
             }
         }
         /* Else fail silently */

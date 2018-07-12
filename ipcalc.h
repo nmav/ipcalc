@@ -20,6 +20,8 @@
 #ifndef _IPCALC_H
 #define _IPCALC_H
 
+int __attribute__((__format__(printf, 2, 3))) safe_asprintf(char **strp, const char *fmt, ...);
+
 #ifdef USE_GEOIP
 void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char  **coord);
 void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **city, char **coord);
