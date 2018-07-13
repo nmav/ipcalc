@@ -1,7 +1,4 @@
 #define _GNU_SOURCE
-
-
-#include <maxminddb.h>
 #include <sys/socket.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +7,7 @@
 #include "ipcalc.h"
 
 #ifdef USE_MAXMIND
+#include <maxminddb.h>
 
 #ifndef MAXMINDDB_LOCATION_COUNTRY
 #define MAXMINDDB_LOCATION_COUNTRY "/usr/share/GeoIP/GeoLite2-Country.mmdb"

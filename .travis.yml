@@ -11,9 +11,10 @@ before_script:
 
 env:
   matrix:
-    - USE_GEOIP=no  USE_DYN_GEOIP=no
-    - USE_GEOIP=yes USE_DYN_GEOIP=no
-    - USE_GEOIP=yes USE_DYN_GEOIP=yes
+    - USE_GEOIP=no  USE_DYN_GEOIP=no  USE_MAXMIND=no
+    - USE_GEOIP=yes USE_DYN_GEOIP=no  USE_MAXMIND=no
+    - USE_GEOIP=yes USE_DYN_GEOIP=yes USE_MAXMIND=no
+    - USE_GEOIP=no  USE_DYN_GEOIP=no  USE_MAXMIND=yes
 
 script: CFLAGS="-O2 -g -Werror" LIBS=-lrt LIBPATH=/usr/lib/x86_64-linux-gnu make && make check
 
