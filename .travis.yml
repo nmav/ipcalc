@@ -7,7 +7,7 @@ compiler:
 
 before_script:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq libpopt-dev libgeoip-dev
+  - sudo apt-get install -qq libpopt-dev libgeoip-dev libmaxminddb-dev
 
 env:
   matrix:
