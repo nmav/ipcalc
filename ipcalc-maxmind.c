@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 
+
 #include <maxminddb.h>
 #include <sys/socket.h>
 #include <stdio.h>
@@ -7,6 +8,16 @@
 #include <string.h>
 
 #include "ipcalc.h"
+
+#ifdef USE_MAXMIND
+
+#ifndef MAXMINDDB_LOCATION_COUNTRY
+#define MAXMINDDB_LOCATION_COUNTRY "/usr/share/GeoIP/GeoLite2-Country.mmdb"
+#endif
+
+#ifndef MAXMINDDB_LOCATION_CITY
+#define MAXMINDDB_LOCATION_CITY "/usr/share/GeoIP/GeoLite2-City.mmdb"
+#endif
 
 void process_result_from_mmdb_lookup(MMDB_entry_data_s *entry_data, int status, char **output)
 {
@@ -33,7 +44,7 @@ void mmdb_ip_lookup(const char *ip, char **country, char **ccode, char **city, c
     double latitude, longitude;
 
     /* Open the system maxmind database with countries */
-    status = MMDB_open("/usr/share/GeoIP/GeoLite2-Country.mmdb", MMDB_MODE_MMAP, &mmdb);
+    status = MMDB_open(MAXMINDDB_LOCATION_COUNTRY, MMDB_MODE_MMAP, &mmdb);
     if (MMDB_SUCCESS == status) {
         /* Lookup IP address in the database */
         MMDB_lookup_result_s result = MMDB_lookup_string(&mmdb, ip, &gai_error, &mmdb_error);
@@ -55,7 +66,7 @@ void mmdb_ip_lookup(const char *ip, char **country, char **ccode, char **city, c
     /* Else fail silently */
 
     /* Open the system maxmind database with cities - which actually does not contain names of the cities */
-    status = MMDB_open("/usr/share/GeoIP/GeoLite2-City.mmdb", MMDB_MODE_MMAP, &mmdb);
+    status = MMDB_open(MAXMINDDB_LOCATION_CITY, MMDB_MODE_MMAP, &mmdb);
     if (MMDB_SUCCESS == status) {
         /* Lookup IP address in the database */
         MMDB_lookup_result_s result = MMDB_lookup_string(&mmdb, ip, &gai_error, &mmdb_error);
@@ -92,3 +103,5 @@ void mmdb_ip_lookup(const char *ip, char **country, char **ccode, char **city, c
     }
     /* Else fail silently */
 }
+
+#endif
