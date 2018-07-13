@@ -13,8 +13,13 @@ LDFLAGS=$(LIBS)
 
 ifeq ($(USE_GEOIP),yes)
 ifeq ($(USE_MAXMIND),yes)
+ifeq ($(USE_DYN_GEOIP),yes)
+LDFLAGS+=-ldl
+CFLAGS+=-DUSE_MAXMIND -DUSE_DYN_GEOIP -DLIBPATH="\"$(LIBPATH)\""
+else
 LDFLAGS+=-lmaxminddb
 CFLAGS+=-DUSE_MAXMIND
+endif
 else
 ifeq ($(USE_DYN_GEOIP),yes)
 LDFLAGS+=-ldl

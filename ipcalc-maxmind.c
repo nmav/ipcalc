@@ -18,10 +18,76 @@
 #define MAXMINDDB_LOCATION_CITY "/usr/share/GeoIP/GeoLite2-City.mmdb"
 #endif
 
+#ifdef USE_DYN_GEOIP
+# include <dlfcn.h>
+# define LIBNAME LIBPATH"/libmaxminddb.so.0"
+
+typedef int (*MMDB_open_fn)
+    (const char *const filename,
+    uint32_t flags,
+    MMDB_s *const mmdb);
+typedef void (*MMDB_close_fn)
+    (MMDB_s *const mmdb);
+typedef MMDB_lookup_result_s (*MMDB_lookup_string_fn)
+    (MMDB_s *const mmdb,
+    const char *const ipstr,
+    int *const gai_error,
+    int *const mmdb_error);
+typedef int (*MMDB_get_value_fn)
+    (MMDB_entry_s *const start,
+    MMDB_entry_data_s *const entry_data,
+    ...);
+
+static MMDB_close_fn          pMMDB_close;
+static MMDB_get_value_fn      pMMDB_get_value;
+static MMDB_lookup_string_fn  pMMDB_lookup_string;
+static MMDB_open_fn           pMMDB_open;
+
+int mmdb_setup(void)
+{
+	static void *ld = NULL;
+	static int ret = 0;
+	static char err[256] = {0};
+
+	if (ld != NULL || ret != 0) {
+	    	if (!beSilent && err[0] != 0) {
+	    		fprintf(stderr, "%s", err);
+		}
+		return ret;
+	}
+
+	ld = dlopen(LIBNAME, RTLD_LAZY);
+	if (ld == NULL) {
+		snprintf(err, sizeof(err), "ipcalc: could not open %s\n", LIBNAME);
+		ret = -1;
+		goto exit;
+	}
+
+    pMMDB_close         = dlsym(ld, "MMDB_close");
+    pMMDB_get_value     = dlsym(ld, "MMDB_get_value");
+    pMMDB_lookup_string = dlsym(ld, "MMDB_lookup_string");
+    pMMDB_open          = dlsym(ld, "MMDB_open");
+
+    if(pMMDB_close == NULL ||
+       pMMDB_get_value == NULL ||
+       pMMDB_lookup_string == NULL ||
+       pMMDB_open == NULL) {
+        snprintf(err, sizeof(err), "ipcalc: could not find symbols in libmaxmind\n");
+        ret = -1;
+        goto exit;
+    }
+
+	ret = 0;
+ exit:
+	return ret;
+}
+
+#else
 #define pMMDB_close         MMDB_close
 #define pMMDB_get_value     MMDB_get_value
 #define pMMDB_lookup_string MMDB_lookup_string
 #define pMMDB_open          MMDB_open
+#endif
 
 void process_result_from_mmdb_lookup(MMDB_entry_data_s *entry_data, int status, char **output)
 {

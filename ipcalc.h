@@ -37,8 +37,13 @@ int geo_setup(void);
 
 #ifdef USE_MAXMIND
 void mmdb_ip_lookup(const char *ip, char **country, char **ccode, char **city, char **coord);
+int mmdb_setup(void);
+#ifndef USE_DYN_GEOIP
+# define mmdb_setup() 0
+#endif
 #else
 # define mmdb_ip_lookup(x,y,z,w,a)
+# define mmdb_setup() -1
 #endif
 
 char __attribute__((warn_unused_result)) *safe_strdup(const char *str);

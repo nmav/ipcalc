@@ -1295,7 +1295,12 @@ int main(int argc, char **argv)
 	if (hostname)
 		flags |= FLAG_RESOLVE_IP;
 
-	if (geo_setup() == 0 && ((flags & FLAG_SHOW_ALL_INFO) == FLAG_SHOW_ALL_INFO))
+#ifdef USE_MAXMIND
+	if (mmdb_setup() == 0 &&
+#else
+	if (geo_setup() == 0 &&
+#endif
+        ((flags & FLAG_SHOW_ALL_INFO) == FLAG_SHOW_ALL_INFO))
 		flags |= FLAG_GET_GEOIP;
 
 	if ((hostname && randomStr) || (hostname && splitStr) || (randomStr && splitStr)) {
