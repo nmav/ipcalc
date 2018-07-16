@@ -1,4 +1,5 @@
 USE_GEOIP?=yes
+USE_MAXMIND?=yes
 USE_DYN_GEOIP?=yes
 
 LIBPATH?=/usr/lib64
@@ -11,6 +12,15 @@ CFLAGS?=-O2 -g -Wall
 LDFLAGS=$(LIBS)
 
 ifeq ($(USE_GEOIP),yes)
+ifeq ($(USE_MAXMIND),yes)
+ifeq ($(USE_DYN_GEOIP),yes)
+LDFLAGS+=-ldl
+CFLAGS+=-DUSE_MAXMIND -DUSE_DYN_GEOIP -DLIBPATH="\"$(LIBPATH)\""
+else
+LDFLAGS+=-lmaxminddb
+CFLAGS+=-DUSE_MAXMIND
+endif
+else
 ifeq ($(USE_DYN_GEOIP),yes)
 LDFLAGS+=-ldl
 CFLAGS+=-DUSE_GEOIP -DUSE_DYN_GEOIP -DLIBPATH="\"$(LIBPATH)\""
@@ -19,10 +29,11 @@ LDFLAGS+=-lGeoIP
 CFLAGS+=-DUSE_GEOIP
 endif
 endif
+endif
 
 all: ipcalc
 
-ipcalc: ipcalc.c ipcalc-geoip.c ipcalc-reverse.c netsplit.c
+ipcalc: ipcalc.c ipcalc-geoip.c ipcalc-maxmind.c ipcalc-reverse.c ipcalc-utils.c netsplit.c
 	$(CC) $(CFLAGS) -DVERSION="\"$(VERSION)\"" $^ -o $@ $(LDFLAGS)
 
 clean:
@@ -68,3 +79,6 @@ check: ipcalc
 	test "$(SPLIT_LINES_IPV6)" = "$(SPLIT_TOTAL_IPV6)"
 	test "$(SPLIT_LINES)" = "$(SPLIT_TOTAL)"
 	./ipcalc-tests
+
+docker-build:
+	docker build -f ./Dockerfile.tests .

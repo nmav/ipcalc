@@ -1,0 +1,11 @@
+FROM registry.fedoraproject.org/fedora:latest
+
+RUN dnf group install 'C Development Tools and Libraries' -y \
+	&& dnf install libmaxminddb-devel -y \
+    && dnf clean all
+
+WORKDIR /src
+
+COPY . /src
+
+RUN make clean && make all

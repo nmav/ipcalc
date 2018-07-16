@@ -20,6 +20,8 @@
 #ifndef _IPCALC_H
 #define _IPCALC_H
 
+int __attribute__((__format__(printf, 2, 3))) safe_asprintf(char **strp, const char *fmt, ...);
+
 #ifdef USE_GEOIP
 void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char  **coord);
 void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **city, char **coord);
@@ -31,6 +33,17 @@ int geo_setup(void);
 # define geo_ipv4_lookup(x,y,z,w,a)
 # define geo_ipv6_lookup(x,y,z,w,a)
 # define geo_setup() -1
+#endif
+
+#ifdef USE_MAXMIND
+void mmdb_ip_lookup(const char *ip, char **country, char **ccode, char **city, char **coord);
+int mmdb_setup(void);
+#ifndef USE_DYN_GEOIP
+# define mmdb_setup() 0
+#endif
+#else
+# define mmdb_ip_lookup(x,y,z,w,a)
+# define mmdb_setup() -1
 #endif
 
 char __attribute__((warn_unused_result)) *safe_strdup(const char *str);

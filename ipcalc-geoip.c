@@ -120,22 +120,6 @@ extern void _GeoIP_setup_dbfilename(void);
 #  define pGeoIP_code_by_id GeoIP_code_by_id
 # endif
 
-static int __attribute__((__format__(printf, 2, 3)))
-safe_asprintf(char **strp, const char *fmt, ...)
-{
-	int ret;
-	va_list args;
-
-	va_start(args, fmt);
-	ret = vasprintf(&(*strp), fmt, args);
-	va_end(args);
-	if (ret < 0) {
-		fprintf(stderr, "Memory allocation failure\n");
-		exit(1);
-	}
-	return ret;
-}
-
 void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char **coord)
 {
 	GeoIP *gi;
