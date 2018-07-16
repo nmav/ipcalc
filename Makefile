@@ -79,3 +79,6 @@ check: ipcalc
 	test "$(SPLIT_LINES_IPV6)" = "$(SPLIT_TOTAL_IPV6)"
 	test "$(SPLIT_LINES)" = "$(SPLIT_TOTAL)"
 	./ipcalc-tests
+
+docker-build:
+	docker build -f ./Dockerfile.tests .

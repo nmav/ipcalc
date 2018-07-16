@@ -7,16 +7,13 @@ compiler:
 
 before_script:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq libpopt-dev libgeoip-dev libmaxminddb-dev
+  - sudo apt-get install -qq libpopt-dev libgeoip-dev
 
 env:
   matrix:
     - USE_GEOIP=no  USE_DYN_GEOIP=no  USE_MAXMIND=no
     - USE_GEOIP=yes USE_DYN_GEOIP=no  USE_MAXMIND=no
     - USE_GEOIP=yes USE_DYN_GEOIP=yes USE_MAXMIND=no
-    - USE_GEOIP=no  USE_DYN_GEOIP=no  USE_MAXMIND=yes
-    - USE_GEOIP=yes USE_DYN_GEOIP=no  USE_MAXMIND=yes
-    - USE_GEOIP=yes USE_DYN_GEOIP=yes USE_MAXMIND=yes
 
-script: CFLAGS="-O2 -g -Werror" LIBS=-lrt LIBPATH=/usr/lib/x86_64-linux-gnu make && make check
+script: CFLAGS="-O2 -g -Werror" LIBS=-lrt LIBPATH=/usr/lib/x86_64-linux-gnu make && make check && make docker-build
 
