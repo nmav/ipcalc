@@ -709,8 +709,9 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	ipv4_prefix_to_hosts(info->hosts, sizeof(info->hosts), prefix);
 
-	if (flags & FLAG_GET_GEOIP)
-		geo_ipv4_lookup(ip, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
+	if (flags & FLAG_GET_GEOIP) {
+		geo_ip_lookup(ipStr, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
+	}
 
 	if (flags & FLAG_RESOLVE_HOST) {
 		info->hostname = get_hostname(AF_INET, &ip);
@@ -724,7 +725,6 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 			return -1;
 		}
 	}
-
 	return 0;
 }
 
@@ -928,8 +928,9 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 	ipv6_prefix_to_hosts(info->hosts, sizeof(info->hosts), prefix);
 
 
-	if (flags & FLAG_GET_GEOIP)
-		geo_ipv6_lookup(&ip6, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
+	if (flags & FLAG_GET_GEOIP) {
+		geo_ip_lookup(ipStr, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
+	}
 
 	if (flags & FLAG_RESOLVE_HOST) {
 		info->hostname = get_hostname(AF_INET6, &ip6);
@@ -1059,7 +1060,7 @@ static const struct option long_options[] = {
 	{"hostname", 0, 0, 'h'},
 	{"lookup-host", 1, 0, 'o'},
 	{"reverse-dns", 0, 0, OPT_REVERSE},
-#ifdef USE_GEOIP
+#if defined(USE_GEOIP) || defined(USE_MAXMIND)
 	{"geoinfo", 0, 0, 'g'},
 #endif
 	{"netmask", 0, 0, 'm'},
@@ -1108,7 +1109,7 @@ void usage(unsigned verbose)
 		fprintf(stderr, "                                  resides on\n");
 		fprintf(stderr, "  -h, --hostname                  Show hostname determined via DNS\n");
 		fprintf(stderr, "  -o, --lookup-host=STRING        Show IP as determined via DNS\n");
-#ifdef USE_GEOIP
+#if defined(USE_GEOIP) || defined(USE_MAXMIND)
 		fprintf(stderr, "  -g, --geoinfo                   Show Geographic information about the\n");
 		fprintf(stderr, "                                  provided IP\n");
 #endif
@@ -1291,7 +1292,8 @@ int main(int argc, char **argv)
 	if (hostname)
 		flags |= FLAG_RESOLVE_IP;
 
-	if (geo_setup() == 0 && ((flags & FLAG_SHOW_ALL_INFO) == FLAG_SHOW_ALL_INFO))
+	if (geo_setup() == 0 &&
+        ((flags & FLAG_SHOW_ALL_INFO) == FLAG_SHOW_ALL_INFO))
 		flags |= FLAG_GET_GEOIP;
 
 	if ((hostname && randomStr) || (hostname && splitStr) || (randomStr && splitStr)) {

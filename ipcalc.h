@@ -20,13 +20,20 @@
 #ifndef _IPCALC_H
 #define _IPCALC_H
 
-#ifdef USE_GEOIP
-void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char  **coord);
-void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **city, char **coord);
-int geo_setup(void);
-#ifndef USE_DYN_GEOIP
-# define geo_setup() 0
-#endif
+int __attribute__((__format__(printf, 2, 3))) safe_asprintf(char **strp, const char *fmt, ...);
+
+#if defined(USE_GEOIP)
+  void geo_ip_lookup(const char *ip, char **country, char **ccode, char **city, char  **coord);
+  int geo_setup(void);
+# ifndef USE_RUNTIME_LINKING
+#   define geo_setup() 0
+# endif
+#elif defined(USE_MAXMIND)
+  void geo_ip_lookup(const char *ip, char **country, char **ccode, char **city, char  **coord);
+  int geo_setup(void);
+# ifndef USE_RUNTIME_LINKING
+#   define geo_setup() 0
+# endif
 #else
 # define geo_ipv4_lookup(x,y,z,w,a)
 # define geo_ipv6_lookup(x,y,z,w,a)
