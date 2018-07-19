@@ -1,23 +1,42 @@
 .fedora.latest.template: &fedora_template
   image: fedora:latest
   before_script:
-    - dnf install -y GeoIP-devel make gcc
+    - dnf install -y GeoIP-devel libmaxminddb-devel make gcc libasan geolite2-{city,country}
 
 fedora.simple:
   <<: *fedora_template
   script:
-    - USE_GEOIP=no USE_DYN_GEOIP=no CFLAGS="-O2 -g -Werror" make
+    - USE_GEOIP=no USE_RUNTIME_LINKING=no CFLAGS="-O2 -g -Werror" make
     - make check
 
 fedora.geoip:
   <<: *fedora_template
   script:
-    - USE_GEOIP=yes USE_DYN_GEOIP=no CFLAGS="-O2 -g -Werror" make
+    - USE_GEOIP=yes USE_RUNTIME_LINKING=no USE_MAXMIND=no CFLAGS="-O2 -g -Werror" make
     - make check
 
 fedora.dyn_geoip:
   <<: *fedora_template
   script:
-    - USE_GEOIP=yes USE_DYN_GEOIP=yes CFLAGS="-O2 -g -Werror" make
+    - USE_GEOIP=yes USE_RUNTIME_LINKING=yes USE_MAXMIND=no CFLAGS="-O2 -g -Werror" make
     - make check
 
+fedora.maxmind:
+  <<: *fedora_template
+  script:
+    - USE_GEOIP=no USE_RUNTIME_LINKING=no USE_MAXMIND=yes CFLAGS="-O2 -g -Werror" make
+    - make check
+
+fedora.dyn_maxmind:
+  <<: *fedora_template
+  script:
+    - USE_GEOIP=no USE_RUNTIME_LINKING=yes USE_MAXMIND=yes CFLAGS="-O2 -g -Werror" make
+    - make check
+
+fedora.dyn_maxmind_with_asan:
+  <<: *fedora_template
+  script:
+    - USE_GEOIP=no USE_RUNTIME_LINKING=yes USE_MAXMIND=yes CFLAGS="-fsanitize=address -O2 -g -Werror" make
+    - export ASAN_OPTIONS="detect_leaks=0"
+    - make check
+    - ./ipcalc -g 217.31.205.50

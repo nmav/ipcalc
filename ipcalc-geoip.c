@@ -36,7 +36,7 @@
 
 #define GEOIP_SILENCE 16	/* fix libgeoip < 1.6.3 */
 
-# ifdef USE_DYN_GEOIP
+# ifdef USE_RUNTIME_LINKING
 #  include <dlfcn.h>
 
 typedef void (*_GeoIP_setup_dbfilename_func)(void);
@@ -120,23 +120,7 @@ extern void _GeoIP_setup_dbfilename(void);
 #  define pGeoIP_code_by_id GeoIP_code_by_id
 # endif
 
-static int __attribute__((__format__(printf, 2, 3)))
-safe_asprintf(char **strp, const char *fmt, ...)
-{
-	int ret;
-	va_list args;
-
-	va_start(args, fmt);
-	ret = vasprintf(&(*strp), fmt, args);
-	va_end(args);
-	if (ret < 0) {
-		fprintf(stderr, "Memory allocation failure\n");
-		exit(1);
-	}
-	return ret;
-}
-
-void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char **coord)
+static void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **city, char **coord)
 {
 	GeoIP *gi;
 	GeoIPRecord *gir;
@@ -202,7 +186,7 @@ void geo_ipv4_lookup(struct in_addr ip, char **country, char **ccode, char **cit
 	return;
 }
 
-void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **city, char **coord)
+static void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **city, char **coord)
 {
 	GeoIP *gi;
 	GeoIPRecord *gir;
@@ -264,6 +248,18 @@ void geo_ipv6_lookup(struct in6_addr *ip, char **country, char **ccode, char **c
 	}
 
 	return;
+}
+
+void geo_ip_lookup(const char *ip, char **country, char **ccode, char **city, char **coord)
+{
+        struct in_addr ipv4;
+        struct in6_addr ipv6;
+        if (inet_pton(AF_INET, ip, &ipv4) == 1) {
+              geo_ipv4_lookup(ipv4, country, ccode, city, coord);
+        } else if (inet_pton(AF_INET6, ip, &ipv6) == 1) {
+              geo_ipv6_lookup(&ipv6, country, ccode, city, coord);
+        }
+        return;
 }
 
 #endif
