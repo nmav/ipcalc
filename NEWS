@@ -1,4 +1,4 @@
-* Version 0.2.4 (unreleased)
+* Version 0.2.4 (released 2018-07-23)
 - Added support for libmaxmind DB API as an alternative to libgeoip.
 
 

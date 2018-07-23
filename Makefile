@@ -6,7 +6,7 @@ LIBPATH?=/usr/lib64
 #LIBPATH=/usr/lib/x86_64-linux-gnu
 
 LIBS?=
-VERSION=0.2.3
+VERSION=0.2.4
 CC?=gcc
 CFLAGS?=-O2 -g -Wall
 LDFLAGS=$(LIBS)
