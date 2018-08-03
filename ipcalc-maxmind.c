@@ -113,6 +113,9 @@ void geo_ip_lookup(const char *ip, char **country, char **ccode, char **city, ch
     int gai_error, mmdb_error, status, coordinates=0;
     double latitude, longitude;
 
+    if (geo_setup() != 0)
+        return;
+
     /* Open the system maxmind database with countries */
     status = pMMDB_open(MAXMINDDB_LOCATION_COUNTRY, MMDB_MODE_MMAP, &mmdb);
     if (MMDB_SUCCESS == status) {
