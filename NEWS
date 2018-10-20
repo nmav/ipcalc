@@ -1,3 +1,7 @@
+* Version 0.2.5 (unreleased)
+- Fixed compilation with no geoinformation
+
+
 * Version 0.2.4 (released 2018-07-23)
 - Added support for libmaxmind DB API as an alternative to libgeoip.
 

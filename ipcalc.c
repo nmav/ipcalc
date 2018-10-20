@@ -709,9 +709,11 @@ int get_ipv4_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	ipv4_prefix_to_hosts(info->hosts, sizeof(info->hosts), prefix);
 
+#if defined(USE_GEOIP) || defined(USE_MAXMIND)
 	if (flags & FLAG_GET_GEOIP) {
 		geo_ip_lookup(ipStr, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
 	}
+#endif
 
 	if (flags & FLAG_RESOLVE_HOST) {
 		info->hostname = get_hostname(AF_INET, &ip);
@@ -927,10 +929,11 @@ int get_ipv6_info(const char *ipStr, int prefix, ip_info_st * info,
 
 	ipv6_prefix_to_hosts(info->hosts, sizeof(info->hosts), prefix);
 
-
+#if defined(USE_GEOIP) || defined(USE_MAXMIND)
 	if (flags & FLAG_GET_GEOIP) {
 		geo_ip_lookup(ipStr, &info->geoip_country, &info->geoip_ccode, &info->geoip_city, &info->geoip_coord);
 	}
+#endif
 
 	if (flags & FLAG_RESOLVE_HOST) {
 		info->hostname = get_hostname(AF_INET6, &ip6);
