@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/nmav/ipcalc.svg?branch=master)](https://travis-ci.org/nmav/ipcalc)
-
 # Information about ipcalc
 
 This is a modern tool to assist in network address calculations for IPv4 and IPv6.
@@ -9,6 +7,28 @@ as well as a tool suitable to be used by scripts or other programs.
 It supports printing a summary about the provided network address, multiple
 command line options per information to be printed, transparent IPv6 support,
 and in addition it will use libGeoIP if available to provide geographic information.
+
+The project started as a fork of the ipcalc tool in the Fedora distribution
+but it has since then replaced the original tool.
+
+
+# How to build
+
+Simply type:
+```
+$ make
+```
+
+In order to access geo-information the application depends on the maxmind
+database (libmaxminddb). Alternatively it can be built using the older
+libgeoip (libgeoip) or with no geo-information whatsoever. The options
+can be provided on the makefile via the variables USE_GEOIP (yes/no),
+USE_MAXMIND (yes/no). For example the following command will compile
+with no support for geo-information.
+
+```
+$ make USE_GEOIP=no USE_MAXMIND=no
+```
 
 
 # Examples
